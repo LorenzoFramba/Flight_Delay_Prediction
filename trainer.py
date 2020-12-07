@@ -1,8 +1,10 @@
 
 from pyspark.ml.feature import VectorAssembler
+from pyspark.mllib.tree import RandomForest, RandomForestModel
+from pyspark.mllib.util import MLUtils
 from pyspark.ml.regression import LinearRegression
 from pyspark.ml.evaluation import RegressionEvaluator
-from  pyspark.sql.functions import abs
+from pyspark.sql.functions import abs
 
 
 class Trainer:
@@ -15,11 +17,11 @@ class Trainer:
         self.correlation() 
 
         if(self.cfg.model == 'linear_regression'):
-            self.linear_regression_train()
+            self.R2LR = self.linear_regression_train()
 
-        elif(self.cfg.model == 'al'):
-            print("altro modello")
-            #self.fuck
+        elif(self.cfg.model == 'all'):
+            self.R2LR = self.linear_regression_train()
+            
         else:
             print("nessuna selezione")
 
@@ -28,6 +30,14 @@ class Trainer:
         corr_matrix = self.df.select([x[0] for x in self.df.dtypes if 'int' in x])
         corr_matrix.show(5)
         [(c[0], self.df.corr("ArrDelay", c[0])) for c in corr_matrix.dtypes]
+
+
+    def random_forest_train(self):
+        print("TODO")
+
+
+
+
 
 
     def linear_regression_train(self):
@@ -65,4 +75,7 @@ class Trainer:
         
         pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
                  labelCol="ArrDelay",metricName="r2")
-        print("R Squared (R2) on test data = %g" % pred_evaluator.evaluate(predictions))
+        pred = pred_evaluator.evaluate(predictions)                 
+        print("R Squared (R2) on test data = %g" % pred)
+
+        return pred
