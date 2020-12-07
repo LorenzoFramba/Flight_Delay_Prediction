@@ -9,8 +9,9 @@ class Clean:
         self.cfg = config
         self.spark =spark
         self.sc = sc
-        self.df = self.removeNaN(df)
-        self.df = self.changeVar(self.df)
+        self.df = self.changeVar(df)
+        self.df = self.removeNaN(self.df)
+        #self.df = self.changeVar(self.df)
 
     def removeNaN(self, df):
         # removing as is stated in the task along with the 'Year'
@@ -31,9 +32,15 @@ class Clean:
         df.select([count(when(isnan(c) | col(c).isNull(), c)).alias(c) for c in df.columns]).show()
         
         # deletion of the "CancelationCode" and droping rows that contain "TailNum"
-        df.na.drop("any")
+
+        df = df.drop('TailNum')
         df = df.drop('CancellationCode')
-        df =  df.filter(df.TailNum.isNotNull() )
+        old_amount = df.count()
+        df = df.na.drop("any")
+        new_amount = df.count()
+        
+        print( "Before: " +str(old_amount) + ",\nAfter: " + str(new_amount) + ",\n%:"+str(round(new_amount/old_amount, 2)*100))
+        #df =  df.filter(df.TailNum.isNotNull() )
        
         return df
 

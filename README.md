@@ -39,5 +39,11 @@ cd Airbus_Big_Data
 ### To Start the program
 
 ```bash
-python main.py --dataset 'year.csv'
+python main.py --dataset 'year.csv' 
+```
+
+- You also have the option to choose the train/test split (default is *75 / 25*), and also the ML model type (default : *linear_regression*). 
+
+```bash
+python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75
 ```
