@@ -12,6 +12,7 @@ import random
 #from pyspark.sql.session import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql.functions import isnan, when, count, col
+from pyspark.ml.feature import VectorAssembler
 
 
 
@@ -20,12 +21,13 @@ parser = argparse.ArgumentParser()
 def main(config):
 
     findspark.init()
+
     data = Data(config)
     spark = data.spark
     sc = data.sc
 
     df = Clean(config, data.df, spark, sc).df
-    df.printSchema()
+    #df.printSchema()
 
 
     corr_matrix = df.select([x[0] for x in df.dtypes if 'int' in x])
@@ -37,20 +39,20 @@ def main(config):
 
     NON_corr_matrix = df.select([x[0] for x in df.dtypes if x[1] !='int']).show(5)
 
+
+
     df_Pandas_25 = df.sample(False, 0.25, 42).toPandas()
 
-
-
-
-    alt.Chart(df_Pandas_25.sample(n=5000, random_state=1)).mark_point().encode(
-        x='Origin',
-        y='Distance',
-        color='DayOfWeek',
-    )
+    #alt.Chart(df_Pandas_25.sample(n=5000, random_state=1)).mark_point().encode(
+    #    x='Origin',
+    #    y='Distance',
+    #    color='DayOfWeek',
+    #)
 
 
 if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='2004.csv')
+    parser.add_argument('--model', type=str, default='Linear_Regression')
     config = parser.parse_args()
     print(config)
     main(config)
