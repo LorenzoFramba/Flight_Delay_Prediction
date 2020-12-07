@@ -5,5 +5,5 @@ A Big Data Assignment regarding Spark, with Airbus data fetched and linear regre
 **To Start the program**
 
 ```bash
-python main.py --dataset '2004.csv'
+python main.py --dataset 'year.csv'
 ```
