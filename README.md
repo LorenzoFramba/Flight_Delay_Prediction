@@ -11,7 +11,7 @@ here are all the dependencies needed for the project
 * [java8](https://www.oracle.com/java/technologies/java8.html)
 
 
-- You can also run this script your chosen *installation_folder*
+- Here an easy script to download *pySpark* and *java8*. remember your path for the *installation_folder*
 ```bash
 
 !apt-get install openjdk-8-jdk-headless -qq > /dev/null
