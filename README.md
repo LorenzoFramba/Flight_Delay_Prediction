@@ -11,7 +11,7 @@ here are all the dependencies needed for the project
 * [java8](https://www.oracle.com/java/technologies/java8.html)
 
 
-You can also run this script your chosen installation_folder
+- You can also run this script your chosen *installation_folder*
 ```bash
 
 !apt-get install openjdk-8-jdk-headless -qq > /dev/null
@@ -27,7 +27,7 @@ os.environ["SPARK_HOME"] = "/installation_folder/spark-2.4.7-bin-hadoop2.7"
 ```
 
 
-- Clone this repo:
+- **Clone this repo**:
 ```bash
 git clone https://github.com/LorenzoFramba/Airbus_Big_Data.git
 cd Airbus_Big_Data
@@ -36,7 +36,7 @@ cd Airbus_Big_Data
 - Move your Airbus database in that folder. Make sure the name is 'year.csv'
 
 
-**To Start the program**
+### To Start the program
 
 ```bash
 python main.py --dataset 'year.csv'
