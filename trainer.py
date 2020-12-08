@@ -173,8 +173,8 @@ class Trainer:
         
         lin_reg = LinearRegression(featuresCol = 'features', 
                                    labelCol='ArrDelay',
-                                   regParam=0.3,
-                                   elasticNetParam=0.8 )
+                                   regParam=self.cfg.regParam,
+                                   elasticNetParam=self.cfg.elasticNetParam )
 
         linear_model = lin_reg.fit(train)
 
@@ -213,7 +213,7 @@ class Trainer:
         glr = GeneralizedLinearRegression(family="gaussian", 
                                           link="Identity", 
                                           maxIter=10, 
-                                          regParam=0.3, 
+                                          regParam=self.cfg.regParam, 
                                           labelCol='ArrDelay')
         gen_model = glr.fit(gen_train)
         print("Coefficients: " + str(gen_model.coefficients))
