@@ -41,8 +41,10 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='2004.csv', required=True,   help='name of Airbus dataset to be used')
     parser.add_argument('--model', type=str, default='linear_regression', choices=['linear_regression', 'generalized_linear_regression_train', 'decision_tree_regression', 'random_forest',  'all'],   help='type of training model')
     parser.add_argument('--split_size_train', type=int, default='75' , choices=range(1, 100),  help='percentage of observations in the training set')
-    parser.add_argument('--regParam', type=float, default='0.3')
-    parser.add_argument('--elasticNetParam', type=float, default='0.8') 
+    parser.add_argument('--regParam', type=float, default='0.3', help='specifies the regularization parameter in ALS, corresponds to λ' )
+    parser.add_argument('--elasticNetParam', type=float, default='0.8' , help='elasticNetParam corresponds to α
+α
+' ) 
 
     
     config = parser.parse_args()
