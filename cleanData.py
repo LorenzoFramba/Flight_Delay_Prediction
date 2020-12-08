@@ -13,7 +13,7 @@ class Clean:
         #self.df = self.changeVar(self.df)
 
     def removeNaN(self, df):
-        # removing as is stated in the task along with the 'Year'
+        # removing as is stated in the task along with the 'Year' and 'DepTime'
         col_to_drop = ['ArrTime', 
                         'ActualElapsedTime', 
                         'AirTime', 
@@ -24,6 +24,7 @@ class Clean:
                         'NASDelay', 
                         'SecurityDelay', 
                         'LateAircraftDelay', 
+                        'DepTime', #remove 
                         'Year']
         df = df.drop(*col_to_drop)
 

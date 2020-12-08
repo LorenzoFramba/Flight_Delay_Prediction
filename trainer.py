@@ -1,15 +1,20 @@
 
 from pyspark.sql.functions import abs
+from pyspark.ml import Pipeline
 from pyspark.mllib.tree import RandomForest, RandomForestModel
 from pyspark.mllib.util import MLUtils
 from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.feature import VectorIndexer, VectorAssembler
 from pyspark.ml.regression import LinearRegression
-from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.regression import GeneralizedLinearRegression
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.regression import DecisionTreeRegressor
-from pyspark.ml.feature import VectorIndexer
-from pyspark.ml import Pipeline
+from pyspark.ml.regression import GBTRegressor
+from pyspark.ml.evaluation import RegressionEvaluator
+
+
+
+
 
 class Trainer:
 
@@ -26,6 +31,9 @@ class Trainer:
         elif(self.cfg.model == 'generalized_linear_regression_train'):
             self.R2GLR = self.generalized_linear_regression_train()
 
+        elif(self.cfg.model == 'gradient_boosted_tree_regression'):
+            self.R2GBR = self.Gradient_boosted_tree_regression()
+
         elif(self.cfg.model == 'random_forest'):
             train, test, featureIndexer = self.split_tree_forest()
             self.R2RF = self.random_forest_train(train, test, featureIndexer)
@@ -41,12 +49,18 @@ class Trainer:
             train, test, featureIndexer = self.split_tree_forest()
             self.R2RF = self.random_forest_train(train, test, featureIndexer)
             self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
+            self.R2GBR = self.Gradient_boosted_tree_regression()
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
                     '\n General Linear Regression R2 : {R2GLR}\t'
                     '\n Random Forest R2 : {R2RF}\t'
-                    '\n Decision Tree Regression R2  : {R2DT}\t'.format(
-                    R2LR=self.R2LR, R2RF=self.R2RF, R2DT=self.R2DT, R2GLR = self.R2GLR )) 
+                    '\n Decision Tree Regression R2  : {R2DT}\t'
+                    '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(
+                    R2LR=self.R2LR, 
+                    R2RF=self.R2RF, 
+                    R2DT=self.R2DT, 
+                    R2GBR = self.R2GBR,
+                    R2GLR = self.R2GLR )) 
         else:
             print("nothing was selected")
 
@@ -114,6 +128,51 @@ class Trainer:
         print(treeModel)
         return R2
 
+    def Gradient_boosted_tree_regression(self):
+        features = self.df.select(['DepDelay', 'TaxiOut', 'ArrDelay'])
+
+        gen_assembler = VectorAssembler(
+                                inputCols=features.columns[:-1],
+                                outputCol='features')
+
+        gen_output = gen_assembler.transform(self.df).select('features','ArrDelay')
+
+        featureIndexer = VectorIndexer(
+                                inputCol='features', 
+                                outputCol='IndexedFeatures').fit(gen_output)
+        (train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        gbt = GBTRegressor(featuresCol="IndexedFeatures", 
+                           labelCol="ArrDelay", 
+                           maxIter=10)
+
+        pipeline = Pipeline(stages=[featureIndexer, gbt])
+        model = pipeline.fit(train)
+
+        predictions = model.transform(test)
+
+        evaluator = RegressionEvaluator(
+                            labelCol="ArrDelay", 
+                            predictionCol="prediction", 
+                            metricName="rmse")
+
+        rmse = evaluator.evaluate(predictions)
+        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+        pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
+                                            labelCol="ArrDelay",
+                                            metricName="r2")
+        R2 = pred_evaluator.evaluate(predictions)
+        print("R Squared (R2) on test data = %g" % R2)
+
+        gbtModel = model.stages[1]
+        print(gbtModel)  # summary only
+
+        return R2
+
+
+
+        
     def random_forest_train(self, train, test, featureIndexer):
         rf = RandomForestRegressor(
                                    featuresCol="IndexedFeatures", 
