@@ -1,5 +1,9 @@
 from getData import Data
 from cleanData import Clean
+from trainer import Trainer
+from pyspark.sql.types import *
+from pyspark.sql.functions import isnan, when, count, col
+from pyspark.ml.feature import VectorAssembler
 import findspark
 import pandas as pd
 import argparse
@@ -7,50 +11,39 @@ import altair as alt
 import pyspark
 import random
 
-#from pyspark import SparkContext
-#from pyspark.sql import SQLContext
-#from pyspark.sql.session import SparkSession
-from pyspark.sql.types import *
-from pyspark.sql.functions import isnan, when, count, col
-
-
 
 parser = argparse.ArgumentParser()     
 
 def main(config):
 
     findspark.init()
+
     data = Data(config)
-    spark = data.spark
-    sc = data.sc
 
-    df = Clean(config, data.df, spark, sc).df
-    df.printSchema()
+    df = Clean(config, data.df, data.spark, data.sc).df
 
+    Trainer(config,df, data.spark, data.sc)
 
-    corr_matrix = df.select([x[0] for x in df.dtypes if 'int' in x])
+    #df.printSchema()
+    #df_Pandas_25 = df.sample(False, 0.25, 42).toPandas()
 
-    # I guess it is too pythonic and we nees to change it's PEARSON CORRELATION
+    #alt.Chart(df_Pandas_25.sample(n=5000, random_state=1)).mark_point().encode(
+    #    x='Origin',
+    #    y='Distance',
+    #    color='DayOfWeek',
+    #)
 
-    [df.corr("ArrDelay", c[0]) for c in corr_matrix.dtypes]
-
-
-    NON_corr_matrix = df.select([x[0] for x in df.dtypes if x[1] !='int']).show(5)
-
-    df_Pandas_25 = df.sample(False, 0.25, 42).toPandas()
-
-
-
-
-    alt.Chart(df_Pandas_25.sample(n=5000, random_state=1)).mark_point().encode(
-        x='Origin',
-        y='Distance',
-        color='DayOfWeek',
-    )
-
+    data.sc.stop()
 
 if __name__ == '__main__':
-    parser.add_argument('--dataset', type=str, default='2004.csv')
+    parser.add_argument('--dataset', type=str, default='2004.csv', required=True,   help='name of Airbus dataset to be used')
+    parser.add_argument('--model', type=str, default='linear_regression', choices=['linear_regression', 'generalized_linear_regression_train', 'decision_tree_regression', 'gradient_boosted_tree_regression'  ,'random_forest',  'all'],   help='type of training model')
+    parser.add_argument('--path', type=str, default='' )
+    parser.add_argument('--split_size_train', type=int, default='75' , choices=range(1, 100),  help='percentage of observations in the training set')
+    parser.add_argument('--regParam', type=float, default='0.3', help='specifies the regularization parameter in ALS, corresponds to λ' )
+    parser.add_argument('--elasticNetParam', type=float, default='0.8' , help='elasticNetParam corresponds to α' ) 
+
+    
     config = parser.parse_args()
     print(config)
     main(config)
