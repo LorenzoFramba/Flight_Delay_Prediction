@@ -29,12 +29,13 @@ class Data:
           #  raise print(error)
         #except InvalidArgError as e:
          #   print(e)
-        
-
 
     def getDataset(self, spark, sc):
         sqlContext = SQLContext(sc)
-        getDf = sqlContext.read.load(self.cfg.dataset, 
+        if self.cfg.path != "":
+            self.cfg.path = self.cfg.path+'/'
+            
+        getDf = sqlContext.read.load(self.cfg.path+self.cfg.dataset, 
                       format='com.databricks.spark.csv', 
                       header='true',
                       delimiter=',',

@@ -33,7 +33,7 @@ git clone https://github.com/LorenzoFramba/Airbus_Big_Data.git
 cd Airbus_Big_Data
 ```
 
-- Move your Airbus database in that folder. Make sure the name is 'year.csv' and *year* is a 4 digit number from 1987 to 2008. 
+- Select the *--path* at which the Airbus dataset is saved. If *--path* is not specified, the program assumes the Airbus is in the same folder as the project itselves. . Make sure the name is 'year.csv' and *year* is a 4 digit number from 1987 to 2008. 
 
 
 ### To Start the program

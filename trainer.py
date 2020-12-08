@@ -11,8 +11,6 @@ from pyspark.ml.regression import DecisionTreeRegressor
 from pyspark.ml.feature import VectorIndexer
 from pyspark.ml import Pipeline
 
-
-
 class Trainer:
 
     def __init__(self, config, df, spark, sc):     
@@ -44,16 +42,13 @@ class Trainer:
             self.R2RF = self.random_forest_train(train, test, featureIndexer)
             self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
 
-
             print(  '\n Linear Regression R2 : {R2LR}\t'
                     '\n General Linear Regression R2 : {R2GLR}\t'
                     '\n Random Forest R2 : {R2RF}\t'
                     '\n Decision Tree Regression R2  : {R2DT}\t'.format(
                     R2LR=self.R2LR, R2RF=self.R2RF, R2DT=self.R2DT, R2GLR = self.R2GLR )) 
-
         else:
             print("nothing was selected")
-
 
     def correlation(self):
         corr_matrix = self.df.select([x[0] for x in self.df.dtypes if 'int' in x])
@@ -114,14 +109,10 @@ class Trainer:
         R2 = pred_evaluator.evaluate(predictions)
         print("R Squared (R2) on test data = %g" % R2)
 
-
         treeModel = model.stages[1]
         # summary only
         print(treeModel)
         return R2
-
-
-
 
     def random_forest_train(self, train, test, featureIndexer):
         rf = RandomForestRegressor(
@@ -153,10 +144,6 @@ class Trainer:
         print(rfModel)
 
         return R2
-
-
-
-
 
     def linear_regression_train(self):
         features = self.df.select(['DepDelay', 'TaxiOut'])
@@ -197,8 +184,6 @@ class Trainer:
         print("R Squared (R2) on test data = %g" % r2)
 
         return r2
-
-
 
     def generalized_linear_regression_train(self):
         features = self.df.select(['DepDelay', 'TaxiOut'])
