@@ -1,9 +1,5 @@
-#import findspark
-#findspark.init()
 import pyspark
 import random
-
-#from pyspark import SparkContext
 from pyspark.sql import SQLContext
 from pyspark.sql.session import SparkSession
 from pyspark.sql.types import *

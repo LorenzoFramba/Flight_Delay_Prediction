@@ -1,4 +1,3 @@
-
 import pyspark
 from pyspark.sql.types import *
 from pyspark.sql.functions import isnan, when, count, col

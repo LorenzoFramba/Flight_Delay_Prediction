@@ -1,10 +1,16 @@
 
-from pyspark.ml.feature import VectorAssembler
+from pyspark.sql.functions import abs
 from pyspark.mllib.tree import RandomForest, RandomForestModel
 from pyspark.mllib.util import MLUtils
+from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.regression import LinearRegression
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.sql.functions import abs
+from pyspark.ml.regression import GeneralizedLinearRegression
+from pyspark.ml.regression import RandomForestRegressor
+from pyspark.ml.regression import DecisionTreeRegressor
+from pyspark.ml.feature import VectorIndexer
+from pyspark.ml import Pipeline
+
 
 
 class Trainer:
@@ -19,11 +25,34 @@ class Trainer:
         if(self.cfg.model == 'linear_regression'):
             self.R2LR = self.linear_regression_train()
 
+        elif(self.cfg.model == 'generalized_linear_regression_train'):
+            self.R2GLR = self.generalized_linear_regression_train()
+
+        elif(self.cfg.model == 'random_forest'):
+            train, test, featureIndexer = self.split_tree_forest()
+            self.R2RF = self.random_forest_train(train, test, featureIndexer)
+
+        elif(self.cfg.model == 'decision_tree_regression'):
+            train, test, featureIndexer = self.split_tree_forest()
+            self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
+
         elif(self.cfg.model == 'all'):
+
             self.R2LR = self.linear_regression_train()
-            
+            self.R2GLR = self.generalized_linear_regression_train()
+            train, test, featureIndexer = self.split_tree_forest()
+            self.R2RF = self.random_forest_train(train, test, featureIndexer)
+            self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
+
+
+            print(  '\n Linear Regression R2 : {R2LR}\t'
+                    '\n General Linear Regression R2 : {R2GLR}\t'
+                    '\n Random Forest R2 : {R2RF}\t'
+                    '\n Decision Tree Regression R2  : {R2DT}\t'.format(
+                    R2LR=self.R2LR, R2RF=self.R2RF, R2DT=self.R2DT, R2GLR = self.R2GLR )) 
+
         else:
-            print("nessuna selezione")
+            print("nothing was selected")
 
 
     def correlation(self):
@@ -31,10 +60,99 @@ class Trainer:
         corr_matrix.show(5)
         [(c[0], self.df.corr("ArrDelay", c[0])) for c in corr_matrix.dtypes]
 
+    def split_tree_forest(self):
+        features = self.df.select(['DepDelay', 
+                              'TaxiOut', 
+                              'ArrDelay'])
 
-    def random_forest_train(self):
-        print("TODO")
+        gen_assembler = VectorAssembler(
+            inputCols=features.columns[:-1],
+            outputCol='features')
 
+        gen_output = gen_assembler.transform(self.df).select('features',
+                                                        'ArrDelay')
+
+        featureIndexer = VectorIndexer(
+                                        inputCol='features', 
+                                        outputCol='IndexedFeatures').fit(gen_output)
+
+        (train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        return train, test, featureIndexer
+
+    def decision_tree_regression_train(self, train, test, featureIndexer):
+        dt1 = DecisionTreeRegressor(
+                                    featuresCol="IndexedFeatures", 
+                                    labelCol='ArrDelay')
+
+        pipeline = Pipeline(stages=[featureIndexer, dt1])
+
+        # Train model.  This also runs the indexer.
+        model = pipeline.fit(train)
+
+        # Make predictions.
+        predictions = model.transform(test)
+
+        # Select example rows to display.
+        predictions.select("prediction", 
+                            'ArrDelay', 
+                            "features").show(25)
+
+        evaluator = RegressionEvaluator(
+                            labelCol='ArrDelay', 
+                            predictionCol="prediction", 
+                            metricName="rmse")
+
+        rmse = evaluator.evaluate(predictions)
+        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+        pred_evaluator = RegressionEvaluator(
+                                            predictionCol="prediction", \
+                                            labelCol="ArrDelay",
+                                            metricName="r2")
+
+        R2 = pred_evaluator.evaluate(predictions)
+        print("R Squared (R2) on test data = %g" % R2)
+
+
+        treeModel = model.stages[1]
+        # summary only
+        print(treeModel)
+        return R2
+
+
+
+
+    def random_forest_train(self, train, test, featureIndexer):
+        rf = RandomForestRegressor(
+                                   featuresCol="IndexedFeatures", 
+                                   labelCol='ArrDelay')
+
+        pipeline = Pipeline(stages=[featureIndexer, rf])
+        model = pipeline.fit(train)
+        predictions = model.transform(test)
+        predictions.select("prediction", "ArrDelay", "features").show(25)
+
+        evaluator = RegressionEvaluator(
+                                labelCol='ArrDelay', 
+                                predictionCol="prediction", 
+                                metricName="rmse")
+
+        rmse = evaluator.evaluate(predictions)
+        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+        pred_evaluator = RegressionEvaluator(
+                                predictionCol="prediction", \
+                                labelCol="ArrDelay",
+                                metricName="r2")
+
+        R2 = pred_evaluator.evaluate(predictions)
+        print("R Squared (R2) on test data = %g" % R2)
+
+        rfModel = model.stages[1]
+        print(rfModel)
+
+        return R2
 
 
 
@@ -75,7 +193,42 @@ class Trainer:
         
         pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
                  labelCol="ArrDelay",metricName="r2")
-        pred = pred_evaluator.evaluate(predictions)                 
-        print("R Squared (R2) on test data = %g" % pred)
+        r2 = pred_evaluator.evaluate(predictions)                 
+        print("R Squared (R2) on test data = %g" % r2)
 
-        return pred
+        return r2
+
+
+
+    def generalized_linear_regression_train(self):
+        features = self.df.select(['DepDelay', 'TaxiOut'])
+
+        gen_assembler = VectorAssembler(
+                        inputCols=features.columns,
+                        outputCol='features')
+
+        gen_output = gen_assembler.transform(self.df).select('features','ArrDelay')
+        gen_train,gen_test = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        glr = GeneralizedLinearRegression(family="gaussian", 
+                                          link="Identity", 
+                                          maxIter=10, 
+                                          regParam=0.3, 
+                                          labelCol='ArrDelay')
+        gen_model = glr.fit(gen_train)
+        print("Coefficients: " + str(gen_model.coefficients))
+        print("\nIntercept: " + str(gen_model.intercept)) 
+
+        predictions = gen_model.transform(gen_test)
+        x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
+        predictions = predictions.withColumn('Accuracy',abs(x))
+        predictions.select("prediction","ArrDelay","Accuracy","features").show(10) 
+
+        pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
+                 labelCol="ArrDelay",metricName="r2")
+
+        R2 = pred_evaluator.evaluate(predictions)
+        print("R Squared (R2) on test data = %g" % R2)
+
+        return R2
+                                        
