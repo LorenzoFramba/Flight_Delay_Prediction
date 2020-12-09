@@ -1,4 +1,5 @@
 
+from visualization import Views
 from pyspark.sql.functions import abs
 from pyspark.ml import Pipeline
 from pyspark.mllib.tree import RandomForest, RandomForestModel
@@ -23,7 +24,9 @@ class Trainer:
         self.spark =spark
         self.sc = sc
         self.df = df
-        self.correlation() 
+        
+        Views(config,df).correlation()
+        
 
         if(self.cfg.model == 'linear_regression'):
             self.R2LR = self.linear_regression_train()
@@ -63,11 +66,6 @@ class Trainer:
                     R2GLR = self.R2GLR )) 
         else:
             print("nothing was selected")
-
-    def correlation(self):
-        corr_matrix = self.df.select([x[0] for x in self.df.dtypes if 'int' in x])
-        corr_matrix.show(5)
-        [(c[0], self.df.corr("ArrDelay", c[0])) for c in corr_matrix.dtypes]
 
     def split_tree_forest(self):
         features = self.df.select(['DepDelay', 
@@ -230,6 +228,7 @@ class Trainer:
 
         trainSummary = linear_model.summary
         print("RMSE: %f" % trainSummary.rootMeanSquaredError)
+        print("MAE: %f" % trainSummary.meanAbsoluteError)
         print("\nr2: %f" % trainSummary.r2)
 
         predictions = linear_model.transform(test)

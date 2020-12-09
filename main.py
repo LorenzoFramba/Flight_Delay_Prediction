@@ -1,6 +1,8 @@
 from getData import Data
 from cleanData import Clean
 from trainer import Trainer
+from visualization import Views
+
 from pyspark.sql.types import *
 from pyspark.sql.functions import isnan, when, count, col
 from pyspark.ml.feature import VectorAssembler
@@ -14,6 +16,17 @@ import random
 
 parser = argparse.ArgumentParser()     
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def main(config):
 
     findspark.init()
@@ -24,14 +37,9 @@ def main(config):
 
     Trainer(config,df, data.spark, data.sc)
 
-    #df.printSchema()
-    #df_Pandas_25 = df.sample(False, 0.25, 42).toPandas()
-
-    #alt.Chart(df_Pandas_25.sample(n=5000, random_state=1)).mark_point().encode(
-    #    x='Origin',
-    #    y='Distance',
-    #    color='DayOfWeek',
-    #)
+    if(str(config.view).lower() == 'true'):
+        Views(config,df).correlation_matrix()
+        Views(config,df).scatterPlot()
 
     data.sc.stop()
 
@@ -42,8 +50,9 @@ if __name__ == '__main__':
     parser.add_argument('--split_size_train', type=int, default='75' , choices=range(1, 100),  help='percentage of observations in the training set')
     parser.add_argument('--regParam', type=float, default='0.3', help='specifies the regularization parameter in ALS, corresponds to λ' )
     parser.add_argument('--elasticNetParam', type=float, default='0.8' , help='elasticNetParam corresponds to α' ) 
+    parser.add_argument("--view",  default=False, type=lambda x: (str(x).lower() == 'true'))
 
-    
     config = parser.parse_args()
     print(config)
     main(config)
+
