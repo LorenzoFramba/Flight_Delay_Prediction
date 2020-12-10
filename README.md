@@ -33,16 +33,20 @@ git clone https://github.com/LorenzoFramba/Airbus_Big_Data.git
 cd Airbus_Big_Data
 ```
 
-- Move your Airbus database in that folder. Make sure the name is 'year.csv'
-
 
 ### To Start the program
+
+
+- Select the *--path* at which the Airbus dataset is saved. If *--path* is not specified, the program assumes the Airbus is in the same folder as the project itselves. Make sure the name is 'year.csv' and *year* is a 4 digit number from 1987 to 2008. 
 
 ```bash
 python main.py --dataset 'year.csv' 
 ```
 
-- You also have the option to choose the train/test split (default is *75 / 25*), and also the ML model type (default : *linear_regression*). 
+- You also have the option to choose the train/test split (default is *75 / 25*), and also the ML model type  between *'linear_regression', 'generalized_linear_regression_train ', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
+The *all* option will train and test all the models, compare their respective R2 and select the best performing one.
+
+- You have the option to set hyperparameters, such as *--elasticNetParam* or *--regParam* . 
 
 ```bash
 python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75
