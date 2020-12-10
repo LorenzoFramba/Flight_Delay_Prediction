@@ -19,40 +19,96 @@ from pyspark.ml.evaluation import RegressionEvaluator
 
 class Trainer:
 
-    def __init__(self, config, df, spark, sc):     
+    def __init__(self, config, df, spark, sc, X):     
         self.cfg = config
         self.spark =spark
         self.sc = sc
         self.df = df
+        self.X =X
         
         Views(config,df).correlation()
         
+        valori_LR=[]
+        valori_all=[]
 
         if(self.cfg.model == 'linear_regression'):
-            self.R2LR = self.linear_regression_train()
+
+            for features in self.X:
+                self.R2LR , self.maeLR, self.rmseLR = self.linear_regression_train(features)
+
+                features['R2LR'] = self.R2LR
+                features['maeLR'] = self.maeLR
+                features['rmseLR'] = self.rmseLR
+                valori_LR.append(features)
+        
+            for x in valori_LR:
+                print(x)
+
 
         elif(self.cfg.model == 'generalized_linear_regression_train'):
-            self.R2GLR = self.generalized_linear_regression_train()
+            for features in self.X:
+                self.R2GLR, self.maeGLR, self.rmseGLR = self.generalized_linear_regression_train(features)
+
+                features['R2GLR'] = self.R2GLR
+                features['maeGLR'] = self.maeGLR
+                features['rmseGLR'] = self.rmseGLR
 
         elif(self.cfg.model == 'gradient_boosted_tree_regression'):
-            self.R2GBR = self.Gradient_boosted_tree_regression()
+            for features in self.X:
+                self.R2GBR , self.maeGBR, self.rmseGBR = self.Gradient_boosted_tree_regression(features)
+                features['R2GBR'] = self.R2GBR
+                features['maeGBR'] = self.maeGBR
+                features['rmseGBR'] = self.rmseGBR
 
         elif(self.cfg.model == 'random_forest'):
-            train, test, featureIndexer = self.split_tree_forest()
-            self.R2RF = self.random_forest_train(train, test, featureIndexer)
+            for features in self.X:
+                train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2RF , self.maeRF, self.rmseRF = self.random_forest_train(train, test, featureIndexer)
+                features['R2RF'] = self.R2RF
+                features['maeRF'] = self.maeRF
+                features['rmseRF'] = self.rmseRF
 
         elif(self.cfg.model == 'decision_tree_regression'):
-            train, test, featureIndexer = self.split_tree_forest()
-            self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
+            for features in self.X:
+                train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(train, test, featureIndexer)
+                features['R2DT'] = self.R2DT
+                features['maeDT'] = self.maeDT
+                features['rmseDT'] = self.rmseDT
 
         elif(self.cfg.model == 'all'):
+            for features in self.X:
+                self.R2LR , self.maeLR, self.rmseLR= self.linear_regression_train(features)
+                #self.R2GLR, self.maeGLR, self.rmseGLR  = self.generalized_linear_regression_train(features)
+                train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(train, test, featureIndexer)
+                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(train, test, featureIndexer)
+                self.R2GBR , self.maeGBR, self.rmseGBR= self.Gradient_boosted_tree_regression(features)
 
-            self.R2LR = self.linear_regression_train()
-            self.R2GLR = self.generalized_linear_regression_train()
-            train, test, featureIndexer = self.split_tree_forest()
-            self.R2RF = self.random_forest_train(train, test, featureIndexer)
-            self.R2DT = self.decision_tree_regression_train(train, test, featureIndexer)
-            self.R2GBR = self.Gradient_boosted_tree_regression()
+                features['R2LR'] = self.R2LR
+                features['maeLR'] = self.maeLR
+                features['rmseLR'] = self.rmseLR
+
+                #features['R2GLR'] = self.R2GLR
+                #features['maeGLR'] = self.maeGLR
+                #features['rmseGLR'] = self.rmseGLR
+
+                features['R2RF'] = self.R2RF
+                features['maeRF'] = self.maeRF
+                features['rmseRF'] = self.rmseRF
+
+                features['R2DT'] = self.R2DT
+                features['maeDT'] = self.maeDT
+                features['rmseDT'] = self.rmseDT
+
+                features['R2GBR'] = self.R2GBR
+                features['maeGBR'] = self.maeGBR
+                features['rmseGBR'] = self.rmseGBR
+
+                valori_all.append(features)
+
+            for x in valori_all:
+                print(x)
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
                     '\n General Linear Regression R2 : {R2GLR}\t'
@@ -67,10 +123,11 @@ class Trainer:
         else:
             print("nothing was selected")
 
-    def split_tree_forest(self):
-        features = self.df.select(['DepDelay', 
-                              'TaxiOut', 
-                              'ArrDelay'])
+    def split_tree_forest(self, X):
+        features = self.df.select(X['variables'], 'ArrDelay')
+        #features = self.df.select(['DepDelay', 
+        #                      'TaxiOut', 
+        #                      'ArrDelay'])
 
         gen_assembler = VectorAssembler(
             inputCols=features.columns[:-1],
@@ -110,24 +167,30 @@ class Trainer:
                             predictionCol="prediction", 
                             metricName="rmse")
 
-        rmse = evaluator.evaluate(predictions)
-        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
-
         pred_evaluator = RegressionEvaluator(
                                             predictionCol="prediction", \
                                             labelCol="ArrDelay",
                                             metricName="r2")
+        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="mae")
 
+        rmse = evaluator.evaluate(predictions)
+        mae = mae_evaluator.evaluate(predictions)  
         R2 = pred_evaluator.evaluate(predictions)
         print("R Squared (R2) on test data = %g" % R2)
+        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
 
         treeModel = model.stages[1]
         # summary only
         print(treeModel)
-        return R2
+        return R2, mae, rmse
 
-    def Gradient_boosted_tree_regression(self):
-        features = self.df.select(['DepDelay', 'TaxiOut', 'ArrDelay'])
+    def Gradient_boosted_tree_regression(self, X):
+        
+        features = self.df.select(X['variables'])
+        
+        #features = self.df.select(['DepDelay', 'TaxiOut', 'ArrDelay'])
 
         gen_assembler = VectorAssembler(
                                 inputCols=features.columns[:-1],
@@ -154,19 +217,26 @@ class Trainer:
                             predictionCol="prediction", 
                             metricName="rmse")
 
-        rmse = evaluator.evaluate(predictions)
-        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="mae")
 
         pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
                                             labelCol="ArrDelay",
                                             metricName="r2")
+
         R2 = pred_evaluator.evaluate(predictions)
+        mae = mae_evaluator.evaluate(predictions)
+        rmse = evaluator.evaluate(predictions)
+
+        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
         print("R Squared (R2) on test data = %g" % R2)
 
         gbtModel = model.stages[1]
         print(gbtModel)  # summary only
 
-        return R2
+        return R2, mae, rmse
 
 
 
@@ -194,16 +264,26 @@ class Trainer:
                                 labelCol="ArrDelay",
                                 metricName="r2")
 
+        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="mae")
+
+        mae = mae_evaluator.evaluate(predictions)
+
         R2 = pred_evaluator.evaluate(predictions)
         print("R Squared (R2) on test data = %g" % R2)
 
         rfModel = model.stages[1]
         print(rfModel)
 
-        return R2
+        return R2, mae, rmse
 
-    def linear_regression_train(self):
-        features = self.df.select(['DepDelay', 'TaxiOut'])
+    def linear_regression_train(self,X):
+
+
+        
+
+        features = self.df.select(X['variables'])
         assembler = VectorAssembler(
                     inputCols=features.columns,
                     outputCol="features")
@@ -238,13 +318,29 @@ class Trainer:
         
         pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
                  labelCol="ArrDelay",metricName="r2")
-        r2 = pred_evaluator.evaluate(predictions)                 
+        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="mae")
+
+        rmse_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="rmse")
+
+        mae = mae_evaluator.evaluate(predictions)
+        rmse = rmse_evaluator.evaluate(predictions)
+        r2 = pred_evaluator.evaluate(predictions)       
+
+        print("MAE TEST: %f" % mae)
+        print("rmse TEST: %f" % rmse)
         print("R Squared (R2) on test data = %g" % r2)
 
-        return r2
+        return r2, mae, rmse
 
-    def generalized_linear_regression_train(self):
-        features = self.df.select(['DepDelay', 'TaxiOut'])
+    def generalized_linear_regression_train(self,X):
+
+        #features = self.df.select(X['variables'])
+        features = self.df.select(['DepDelay', 'TaxiOut']) ## Currently, GeneralizedLinearRegression only supports number of features <= 4096. Found 4413 in the input dataset.
+
 
         gen_assembler = VectorAssembler(
                         inputCols=features.columns,
@@ -270,8 +366,20 @@ class Trainer:
         pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
                  labelCol="ArrDelay",metricName="r2")
 
+        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="mae")
+
+        rmse_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
+                                            predictionCol="prediction", 
+                                            metricName="rmse")
+
+        mae = mae_evaluator.evaluate(predictions)
+        rmse = rmse_evaluator.evaluate(predictions)      
         R2 = pred_evaluator.evaluate(predictions)
+
+
         print("R Squared (R2) on test data = %g" % R2)
 
-        return R2
+        return R2, mae, rmse
                                         

@@ -33,13 +33,15 @@ def main(config):
 
     data = Data(config)
 
-    df = Clean(config, data.df, data.spark, data.sc).df
+    #df = Clean(config, data.df, data.spark, data.sc).df
 
-    Trainer(config,df, data.spark, data.sc)
+    data_cleaned = Clean(config, data.df, data.spark, data.sc)
+
+    Trainer(config,data_cleaned.df, data.spark, data.sc, data_cleaned.X)
 
     if(str(config.view).lower() == 'true'):
-        Views(config,df).correlation_matrix()
-        Views(config,df).scatterPlot()
+        Views(config,data_cleaned.df).correlation_matrix()
+        Views(config,data_cleaned.df).scatterPlot()
 
     data.sc.stop()
 
