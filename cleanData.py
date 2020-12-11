@@ -77,17 +77,15 @@ class Clean:
 
         splits = [-float("inf"), 500, 1200, 1700, float("inf")]
         self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
-                                     inputCols=["CRSDepTime", "CRSArrTime", "DepTime"], 
-                                     outputCols=["CatCRSDepTime", "CatCRSArrTime", "CatDepTime"])
-        #df = self.bucketizer.transform(df)
-
-        #df = df.drop(*["CRSDepTime", "CRSArrTime"])
+                                     inputCols=["CRSDepTime", 
+                                                "CRSArrTime", 
+                                                "DepTime"], 
+                                     outputCols=["CatCRSDepTime", 
+                                                "CatCRSArrTime", 
+                                                "CatDepTime"])
 
         self.varIdxer = StringIndexer(inputCol="OrigDest",
                                       outputCol="IndOrigDest")
-        #df = self.varIdxer.transform(df)
-        #df = df.drop("OrigDest")
-
 
         self.oneHot = OneHotEncoder(inputCols=['Month', 
                                           'DayOfWeek', 
@@ -101,14 +99,7 @@ class Clean:
                                   'HotCRSCatArrTime', 
                                   'HotIndOrigDest', 
                                   'HotDepTime'])
-        #df = oneHot.transform(df)
-        #df = df.drop(*['Month', 
-        #               'DayOfWeek', 
-        #               'CatDepTime', 
-        #               'CatCRSDepTime', 
-        #               'CatCRSArrTime', 
-        #               'IndOrigDest'])
-
+                                  
         return df
 
 
