@@ -216,19 +216,51 @@ class Trainer:
                                         inputCol='features', 
                                         outputCol='IndexedFeatures').fit(gen_output)
 
-        (train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        train = train.limit(1000000)
+        test = test.limit(250000)
+
 
         return train, test, featureIndexer
 
     def decision_tree_regression_train(self, train, test, featureIndexer):
-        dt1 = DecisionTreeRegressor(
-                                    featuresCol="IndexedFeatures", 
+
+        features = self.df.select(x)
+
+        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        train = train.limit(1000000)
+        test = test.limit(250000)
+
+        features = self.df.select(X['variables'])
+        
+        dt1 = DecisionTreeRegressor(featuresCol="IndexedFeatures", 
                                     labelCol='ArrDelay')
 
-        pipeline = Pipeline(stages=[featureIndexer, dt1])
+        assembler = VectorAssembler(inputCols=features, 
+                                    outputCol='features')
+
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, dt1])
+
+
+        #false
+        TreeParamGrid = ParamGridBuilder()\        
+            .addGrid(gbt.maxDepth, [2, 10])\
+            .addGrid(gbt.maxBins, [10, 20])\
+            .build()
+
+        tvs = CrossValidator(estimator=pipeline,
+                                estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
+                                evaluator=RegressionEvaluator(labelCol="ArrDelay", 
+                                                              metricName="rmse"),
+                                numFolds=3)
 
         # Train model.  This also runs the indexer.
-        model = pipeline.fit(train)
+        
+        model = tvs.fit(train)
 
         # Make predictions.
         predictions = model.transform(test)
@@ -253,14 +285,17 @@ class Trainer:
         
         features = self.df.select(X['variables'])
         
-        #features = self.df.select(['DepDelay', 'TaxiOut', 'ArrDelay'])
 
-        assembler = VectorAssembler(inputCols=features, outputCol='features')
+        assembler = VectorAssembler(inputCols=features, 
+                                    outputCol='features')
 
-        gbt = GBTRegressor(featuresCol="features", labelCol="ArrDelay", maxIter=10)
+        gbt = GBTRegressor(featuresCol="features", 
+                           labelCol="ArrDelay", 
+                           maxIter=10)
 
         pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, gbt])
 
+        #original
         TreeParamGrid = ParamGridBuilder()\
             .addGrid(gbt.maxDepth, [2, 10])\
             .addGrid(gbt.maxBins, [10, 20])\
@@ -268,7 +303,8 @@ class Trainer:
 
         tvs = CrossValidator(estimator=pipeline,
                                 estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
-                                evaluator=RegressionEvaluator(labelCol="ArrDelay", metricName="rmse"),
+                                evaluator=RegressionEvaluator(labelCol="ArrDelay", 
+                                                              metricName="rmse"),
                                 numFolds=3)
                             #trainRatio=0.85)
 

@@ -84,7 +84,7 @@ class Clean:
         #df = df.drop(*["CRSDepTime", "CRSArrTime"])
 
         self.varIdxer = StringIndexer(inputCol="OrigDest",
-                                      outputCol="IndOrigDest").fit(df)
+                                      outputCol="IndOrigDest")
         #df = self.varIdxer.transform(df)
         #df = df.drop("OrigDest")
 
@@ -100,7 +100,7 @@ class Clean:
                                   'HotCRSCatDepTime', 
                                   'HotCRSCatArrTime', 
                                   'HotIndOrigDest', 
-                                  'HotDepTime']).fit(df)
+                                  'HotDepTime'])
         #df = oneHot.transform(df)
         #df = df.drop(*['Month', 
         #               'DayOfWeek', 
