@@ -16,16 +16,6 @@ import random
 
 parser = argparse.ArgumentParser()     
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 
 def main(config):
 
@@ -37,11 +27,16 @@ def main(config):
 
     data_cleaned = Clean(config, data.df, data.spark, data.sc)
 
-    Trainer(config,data_cleaned.df, data.spark, data.sc, data_cleaned.X)
+    trainer = Trainer(config,data_cleaned.df, data.spark, data.sc, data_cleaned.X)
 
     if(str(config.view).lower() == 'true'):
-        Views(config,data_cleaned.df).correlation_matrix()
-        Views(config,data_cleaned.df).scatterPlot()
+        Views(config,data_cleaned.df,trainer.Visualize_Results).correlation_matrix()
+        Views(config,data_cleaned.df,trainer.Visualize_Results).scatterPlot()
+        if(config.model == 'all'):
+            Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_R2()
+            Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_MAE()
+            Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_RMSE()
+
 
     data.sc.stop()
 

@@ -26,10 +26,17 @@ class Trainer:
         self.df = df
         self.X =X
         
-        Views(config,df).correlation()
+        #Views(config,df).correlation()
         
-        valori_LR=[]
-        valori_all=[]
+        results_LR=[]
+        results_GLR=[]
+        results_RF=[]
+        results_DT=[]
+        results_GBR=[]
+        results_all=[]
+
+        self.Visualize_Results = []
+        
 
         if(self.cfg.model == 'linear_regression'):
 
@@ -39,19 +46,11 @@ class Trainer:
                 features['R2LR'] = self.R2LR
                 features['maeLR'] = self.maeLR
                 features['rmseLR'] = self.rmseLR
-                valori_LR.append(features)
+                results_LR.append(features)
         
-            for x in valori_LR:
+            for x in results_LR:
+                self.Visualize_Results.append(x)
                 print(x)
-
-
-        elif(self.cfg.model == 'generalized_linear_regression_train'):
-            for features in self.X:
-                self.R2GLR, self.maeGLR, self.rmseGLR = self.generalized_linear_regression_train(features)
-
-                features['R2GLR'] = self.R2GLR
-                features['maeGLR'] = self.maeGLR
-                features['rmseGLR'] = self.rmseGLR
 
         elif(self.cfg.model == 'gradient_boosted_tree_regression'):
             for features in self.X:
@@ -59,6 +58,11 @@ class Trainer:
                 features['R2GBR'] = self.R2GBR
                 features['maeGBR'] = self.maeGBR
                 features['rmseGBR'] = self.rmseGBR
+                results_GBR.append(features)
+
+            for x in results_GBR:
+                self.Visualize_Results.append(x)
+                print(x)
 
         elif(self.cfg.model == 'random_forest'):
             for features in self.X:
@@ -67,6 +71,11 @@ class Trainer:
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
                 features['rmseRF'] = self.rmseRF
+                results_RF.append(features)
+            
+            for x in results_RF:
+                self.Visualize_Results.append(x)
+                print(x)
 
         elif(self.cfg.model == 'decision_tree_regression'):
             for features in self.X:
@@ -75,6 +84,24 @@ class Trainer:
                 features['R2DT'] = self.R2DT
                 features['maeDT'] = self.maeDT
                 features['rmseDT'] = self.rmseDT
+                results_DT.append(features)
+            
+            for x in results_DT:
+                self.Visualize_Results.append(x)
+                print(x)
+
+        elif(self.cfg.model == 'generalized_linear_regression_train'):
+            for features in self.X:
+                self.R2GLR, self.maeGLR, self.rmseGLR = self.generalized_linear_regression_train(features)
+
+                features['R2GLR'] = self.R2GLR
+                features['maeGLR'] = self.maeGLR
+                features['rmseGLR'] = self.rmseGLR
+                results_GLR.append(features)
+
+            for x in results_GLR:
+                self.Visualize_Results.append(x)
+                print(x)
 
         elif(self.cfg.model == 'all'):
             for features in self.X:
@@ -105,9 +132,10 @@ class Trainer:
                 features['maeGBR'] = self.maeGBR
                 features['rmseGBR'] = self.rmseGBR
 
-                valori_all.append(features)
+                results_all.append(features)
 
-            for x in valori_all:
+            for x in results_all:
+                self.Visualize_Results.append(x)
                 print(x)
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
@@ -124,7 +152,9 @@ class Trainer:
             print("nothing was selected")
 
     def split_tree_forest(self, X):
-        features = self.df.select(X['variables'], 'ArrDelay')
+        x = X['variables']+ ['ArrDelay']
+
+        features = self.df.select(x)
         #features = self.df.select(['DepDelay', 
         #                      'TaxiOut', 
         #                      'ArrDelay'])
