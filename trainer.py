@@ -4,7 +4,7 @@ from pyspark.sql.functions import abs
 from pyspark.ml import Pipeline
 from pyspark.mllib.tree import RandomForest, RandomForestModel
 from pyspark.mllib.util import MLUtils
-from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.feature import StandardScaler
 from pyspark.ml.feature import VectorIndexer, VectorAssembler
 from pyspark.ml.regression import LinearRegression
 from pyspark.ml.regression import GeneralizedLinearRegression
@@ -12,6 +12,7 @@ from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.regression import DecisionTreeRegressor
 from pyspark.ml.regression import GBTRegressor
 from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml.tuning import ParamGridBuilder, TrainValidationSplit, CrossValidator
 
 
 
@@ -19,12 +20,17 @@ from pyspark.ml.evaluation import RegressionEvaluator
 
 class Trainer:
 
-    def __init__(self, config, df, spark, sc, X):     
+    def __init__(self, config, spark, sc, cleaned_data):     
         self.cfg = config
         self.spark =spark
         self.sc = sc
-        self.df = df
-        self.X =X
+        self.df = cleaned_data.df
+        self.X =cleaned_data.X
+        self.bucketizer = cleaned_data.bucketizer
+        self.varIdxer = cleaned_data.varIdxer
+        self.oneHot = cleaned_data.oneHot
+
+
         
         #Views(config,df).correlation()
         
@@ -54,7 +60,7 @@ class Trainer:
 
         elif(self.cfg.model == 'gradient_boosted_tree_regression'):
             for features in self.X:
-                self.R2GBR , self.maeGBR, self.rmseGBR = self.Gradient_boosted_tree_regression(features)
+                self.R2GBR , self.maeGBR, self.rmseGBR = self.gradient_boosted_tree_regression(features)
                 features['R2GBR'] = self.R2GBR
                 features['maeGBR'] = self.maeGBR
                 features['rmseGBR'] = self.rmseGBR
@@ -110,7 +116,7 @@ class Trainer:
                 train, test, featureIndexer = self.split_tree_forest(features)
                 self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(train, test, featureIndexer)
                 self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(train, test, featureIndexer)
-                self.R2GBR , self.maeGBR, self.rmseGBR= self.Gradient_boosted_tree_regression(features)
+                self.R2GBR , self.maeGBR, self.rmseGBR= self.gradient_boosted_tree_regression(features)
 
                 features['R2LR'] = self.R2LR
                 features['maeLR'] = self.maeLR
@@ -151,14 +157,54 @@ class Trainer:
         else:
             print("nothing was selected")
 
+
+    def linear_regression_train(self,X):
+
+
+
+        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        train = train.limit(1000000)
+        test = test.limit(250000)
+
+        features = self.df.select(X['variables'])
+        assembler = VectorAssembler(
+                    inputCols=features.columns,
+                    outputCol="features")
+
+        lin_reg = LinearRegression(featuresCol = 'features', labelCol="ArrDelay")
+
+
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler,  lin_reg])
+
+
+        linParamGrid = ParamGridBuilder()\
+                        .addGrid(lin_reg.regParam, [0.1, 0.01]) \
+                        .addGrid(lin_reg.fitIntercept, [False, True])\
+                        .addGrid(lin_reg.elasticNetParam, [0.0, 1.0])\
+                        .build()
+
+
+        tvs = CrossValidator(estimator=pipeline,\
+                           estimatorParamMaps = linParamGrid,  
+                           evaluator=RegressionEvaluator(labelCol="ArrDelay", metricName="rmse"),\
+                           numFolds=3)
+                           #trainRatio=0.85)
+
+        model = tvs.fit(train)
+
+        predictions = model.transform(test)
+
+        R2, mae, rmse = self.metrics(predictions)
+
+
+        return R2, mae, rmse
+
     def split_tree_forest(self, X):
         x = X['variables']+ ['ArrDelay']
 
         features = self.df.select(x)
-        #features = self.df.select(['DepDelay', 
-        #                      'TaxiOut', 
-        #                      'ArrDelay'])
-
+        
         gen_assembler = VectorAssembler(
             inputCols=features.columns[:-1],
             outputCol='features')
@@ -188,61 +234,63 @@ class Trainer:
         predictions = model.transform(test)
 
         # Select example rows to display.
-        predictions.select("prediction", 
-                            'ArrDelay', 
-                            "features").show(25)
-
-        evaluator = RegressionEvaluator(
-                            labelCol='ArrDelay', 
-                            predictionCol="prediction", 
-                            metricName="rmse")
-
-        pred_evaluator = RegressionEvaluator(
-                                            predictionCol="prediction", \
-                                            labelCol="ArrDelay",
-                                            metricName="r2")
-        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="mae")
-
-        rmse = evaluator.evaluate(predictions)
-        mae = mae_evaluator.evaluate(predictions)  
-        R2 = pred_evaluator.evaluate(predictions)
-        print("R Squared (R2) on test data = %g" % R2)
-        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+        R2, mae, rmse = self.metrics(predictions)
 
         treeModel = model.stages[1]
         # summary only
         print(treeModel)
         return R2, mae, rmse
 
-    def Gradient_boosted_tree_regression(self, X):
+    def gradient_boosted_tree_regression(self, X):
+
+
+        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        train = train.limit(1000000)
+        test = test.limit(250000)
         
         features = self.df.select(X['variables'])
         
         #features = self.df.select(['DepDelay', 'TaxiOut', 'ArrDelay'])
 
-        gen_assembler = VectorAssembler(
-                                inputCols=features.columns[:-1],
-                                outputCol='features')
+        assembler = VectorAssembler(inputCols=features, outputCol='features')
 
-        gen_output = gen_assembler.transform(self.df).select('features','ArrDelay')
+        gbt = GBTRegressor(featuresCol="features", labelCol="ArrDelay", maxIter=10)
 
-        featureIndexer = VectorIndexer(
-                                inputCol='features', 
-                                outputCol='IndexedFeatures').fit(gen_output)
-        (train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, gbt])
 
-        gbt = GBTRegressor(featuresCol="IndexedFeatures", 
-                           labelCol="ArrDelay", 
-                           maxIter=10)
+        TreeParamGrid = ParamGridBuilder()\
+            .addGrid(gbt.maxDepth, [2, 10])\
+            .addGrid(gbt.maxBins, [10, 20])\
+            .build()
 
-        pipeline = Pipeline(stages=[featureIndexer, gbt])
-        model = pipeline.fit(train)
+        tvs = CrossValidator(estimator=pipeline,
+                                estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
+                                evaluator=RegressionEvaluator(labelCol="ArrDelay", metricName="rmse"),
+                                numFolds=3)
+                            #trainRatio=0.85)
+
+        model = tvs.fit(train)
 
         predictions = model.transform(test)
 
-        evaluator = RegressionEvaluator(
+        R2, mae, rmse = self.metrics(predictions)
+
+        gbtModel = model.stages[1]
+        print(gbtModel)  # summary only
+
+        return R2, mae, rmse
+
+
+    def metrics(self, predictions):
+
+
+        x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
+        predictions = predictions.withColumn('Accuracy',abs(x))
+
+        rmse_evaluator = RegressionEvaluator(
                             labelCol="ArrDelay", 
                             predictionCol="prediction", 
                             metricName="rmse")
@@ -252,25 +300,22 @@ class Trainer:
                                             predictionCol="prediction", 
                                             metricName="mae")
 
-        pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
+        R2_evaluator = RegressionEvaluator(predictionCol="prediction", \
                                             labelCol="ArrDelay",
                                             metricName="r2")
 
-        R2 = pred_evaluator.evaluate(predictions)
+        R2 = R2_evaluator.evaluate(predictions)
         mae = mae_evaluator.evaluate(predictions)
-        rmse = evaluator.evaluate(predictions)
+        rmse = rmse_evaluator.evaluate(predictions)
 
         print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+        print("Mean Absolute Error (MAE) on test data = %g" % mae)
         print("R Squared (R2) on test data = %g" % R2)
-
-        gbtModel = model.stages[1]
-        print(gbtModel)  # summary only
 
         return R2, mae, rmse
 
-
-
         
+
     def random_forest_train(self, train, test, featureIndexer):
         rf = RandomForestRegressor(
                                    featuresCol="IndexedFeatures", 
@@ -279,94 +324,20 @@ class Trainer:
         pipeline = Pipeline(stages=[featureIndexer, rf])
         model = pipeline.fit(train)
         predictions = model.transform(test)
-        predictions.select("prediction", "ArrDelay", "features").show(25)
 
-        evaluator = RegressionEvaluator(
-                                labelCol='ArrDelay', 
-                                predictionCol="prediction", 
-                                metricName="rmse")
 
-        rmse = evaluator.evaluate(predictions)
-        print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
-
-        pred_evaluator = RegressionEvaluator(
-                                predictionCol="prediction", \
-                                labelCol="ArrDelay",
-                                metricName="r2")
-
-        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="mae")
-
-        mae = mae_evaluator.evaluate(predictions)
-
-        R2 = pred_evaluator.evaluate(predictions)
-        print("R Squared (R2) on test data = %g" % R2)
+        R2, mae, rmse = self.metrics(predictions)
 
         rfModel = model.stages[1]
         print(rfModel)
 
         return R2, mae, rmse
 
-    def linear_regression_train(self,X):
-
-
-        
-
-        features = self.df.select(X['variables'])
-        assembler = VectorAssembler(
-                    inputCols=features.columns,
-                    outputCol="features")
-
-        output = assembler.transform(self.df).select('features','ArrDelay')
-
-        print(" train set ", self.cfg.split_size_train / 100)
-        print(" test set ", (100 - self.cfg.split_size_train ) / 100 ) 
-        train,test = output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
-
-        
-        lin_reg = LinearRegression(featuresCol = 'features', 
-                                   labelCol='ArrDelay',
-                                   regParam=self.cfg.regParam,
-                                   elasticNetParam=self.cfg.elasticNetParam )
-
-        linear_model = lin_reg.fit(train)
-
-
-        print("Coefficients: " + str(linear_model.coefficients))
-        print("\nIntercept: " + str(linear_model.intercept))
-
-        trainSummary = linear_model.summary
-        print("RMSE: %f" % trainSummary.rootMeanSquaredError)
-        print("MAE: %f" % trainSummary.meanAbsoluteError)
-        print("\nr2: %f" % trainSummary.r2)
-
-        predictions = linear_model.transform(test)
-        x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
-        predictions = predictions.withColumn('Accuracy',abs(x))
-        predictions.select("prediction","ArrDelay","Accuracy","features").show(10)
-        
-        pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
-                 labelCol="ArrDelay",metricName="r2")
-        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="mae")
-
-        rmse_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="rmse")
-
-        mae = mae_evaluator.evaluate(predictions)
-        rmse = rmse_evaluator.evaluate(predictions)
-        r2 = pred_evaluator.evaluate(predictions)       
-
-        print("MAE TEST: %f" % mae)
-        print("rmse TEST: %f" % rmse)
-        print("R Squared (R2) on test data = %g" % r2)
-
-        return r2, mae, rmse
 
     def generalized_linear_regression_train(self,X):
+
+
+
 
         #features = self.df.select(X['variables'])
         features = self.df.select(['DepDelay', 'TaxiOut']) ## Currently, GeneralizedLinearRegression only supports number of features <= 4096. Found 4413 in the input dataset.
@@ -391,25 +362,9 @@ class Trainer:
         predictions = gen_model.transform(gen_test)
         x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
         predictions = predictions.withColumn('Accuracy',abs(x))
-        predictions.select("prediction","ArrDelay","Accuracy","features").show(10) 
-
-        pred_evaluator = RegressionEvaluator(predictionCol="prediction", \
-                 labelCol="ArrDelay",metricName="r2")
-
-        mae_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="mae")
-
-        rmse_evaluator = RegressionEvaluator(labelCol='ArrDelay', 
-                                            predictionCol="prediction", 
-                                            metricName="rmse")
-
-        mae = mae_evaluator.evaluate(predictions)
-        rmse = rmse_evaluator.evaluate(predictions)      
-        R2 = pred_evaluator.evaluate(predictions)
 
 
-        print("R Squared (R2) on test data = %g" % R2)
+        R2, mae, rmse = self.metrics(predictions)
 
         return R2, mae, rmse
                                         

@@ -53,6 +53,10 @@ class Clean:
         df = df.withColumn('OrigDest', 
                     sf.concat(sf.col('Origin'),sf.lit('_'), sf.col('Dest')))
         df = df.drop(*["Origin", "Dest"])
+
+        df = df.withColumn("Speed", sf.round(col("Distance") / col("CRSElapsedTime"), 2))
+        df = df.drop(*["Distance", "CRSElapsedTime"])
+        
        
         return df
 
@@ -72,17 +76,20 @@ class Clean:
     def hotEncoding(self,df):
 
         splits = [-float("inf"), 500, 1200, 1700, float("inf")]
-        bucketizer = Bucketizer(splitsArray= [splits, splits, splits], inputCols=["CRSDepTime", "CRSArrTime", "DepTime"], outputCols=["CatCRSDepTime", "CatCRSArrTime", "CatDepTime"])
-        df = bucketizer.transform(df)
+        self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
+                                     inputCols=["CRSDepTime", "CRSArrTime", "DepTime"], 
+                                     outputCols=["CatCRSDepTime", "CatCRSArrTime", "CatDepTime"])
+        #df = self.bucketizer.transform(df)
 
-        df = df.drop(*["CRSDepTime", "CRSArrTime"])
+        #df = df.drop(*["CRSDepTime", "CRSArrTime"])
 
-        varIdxer = StringIndexer(inputCol="OrigDest",outputCol="IndOrigDest").fit(df)
-        df = varIdxer.transform(df)
-        df = df.drop("OrigDest")
+        self.varIdxer = StringIndexer(inputCol="OrigDest",
+                                      outputCol="IndOrigDest").fit(df)
+        #df = self.varIdxer.transform(df)
+        #df = df.drop("OrigDest")
 
 
-        oneHot = OneHotEncoder(inputCols=['Month', 
+        self.oneHot = OneHotEncoder(inputCols=['Month', 
                                           'DayOfWeek', 
                                           'CatCRSDepTime', 
                                           'CatCRSArrTime', 
@@ -94,17 +101,13 @@ class Clean:
                                   'HotCRSCatArrTime', 
                                   'HotIndOrigDest', 
                                   'HotDepTime']).fit(df)
-        df = oneHot.transform(df)
-        df = df.drop(*['Month', 
-                       'DayOfWeek', 
-                       'CatDepTime', 
-                       'CatCRSDepTime', 
-                       'CatCRSArrTime', 
-                       'IndOrigDest'])
-
-
-        df = df.withColumn("Speed", sf.round(col("Distance") / col("CRSElapsedTime"), 2))
-        df = df.drop(*["Distance", "CRSElapsedTime"])
+        #df = oneHot.transform(df)
+        #df = df.drop(*['Month', 
+        #               'DayOfWeek', 
+        #               'CatDepTime', 
+        #               'CatCRSDepTime', 
+        #               'CatCRSArrTime', 
+        #               'IndOrigDest'])
 
         return df
 
@@ -118,8 +121,6 @@ class Clean:
         X.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotMonth', 'Speed']})
         X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotIndOrigDest', 'Speed']})
         X.append({ "name": "X6", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']})
-
-
 
         return X
 

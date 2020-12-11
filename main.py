@@ -27,7 +27,7 @@ def main(config):
 
     data_cleaned = Clean(config, data.df, data.spark, data.sc)
 
-    trainer = Trainer(config,data_cleaned.df, data.spark, data.sc, data_cleaned.X)
+    trainer = Trainer(config, data.spark, data.sc, data_cleaned)
 
     if(str(config.view).lower() == 'true'):
         Views(config,data_cleaned.df,trainer.Visualize_Results).correlation_matrix()
