@@ -13,6 +13,7 @@ from pyspark.ml.regression import DecisionTreeRegressor
 from pyspark.ml.regression import GBTRegressor
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.tuning import ParamGridBuilder, TrainValidationSplit, CrossValidator
+from pyspark.ml.feature import VectorAssembler, StringIndexer, OneHotEncoder, Bucketizer
 
 
 
@@ -26,11 +27,6 @@ class Trainer:
         self.sc = sc
         self.df = cleaned_data.df
         self.X =cleaned_data.X
-        self.bucketizer = cleaned_data.bucketizer
-        self.varIdxer = cleaned_data.varIdxer
-        self.oneHot = cleaned_data.oneHot
-
-
         
         #Views(config,df).correlation()
         
@@ -72,8 +68,8 @@ class Trainer:
 
         elif(self.cfg.model == 'random_forest'):
             for features in self.X:
-                train, test, featureIndexer = self.split_tree_forest(features)
-                self.R2RF , self.maeRF, self.rmseRF = self.random_forest_train(train, test, featureIndexer)
+                #train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2RF , self.maeRF, self.rmseRF = self.random_forest_train(features)
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
                 features['rmseRF'] = self.rmseRF
@@ -85,8 +81,8 @@ class Trainer:
 
         elif(self.cfg.model == 'decision_tree_regression'):
             for features in self.X:
-                train, test, featureIndexer = self.split_tree_forest(features)
-                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(train, test, featureIndexer)
+                #train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(features)
                 features['R2DT'] = self.R2DT
                 features['maeDT'] = self.maeDT
                 features['rmseDT'] = self.rmseDT
@@ -113,9 +109,9 @@ class Trainer:
             for features in self.X:
                 self.R2LR , self.maeLR, self.rmseLR= self.linear_regression_train(features)
                 #self.R2GLR, self.maeGLR, self.rmseGLR  = self.generalized_linear_regression_train(features)
-                train, test, featureIndexer = self.split_tree_forest(features)
-                self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(train, test, featureIndexer)
-                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(train, test, featureIndexer)
+                #train, test, featureIndexer = self.split_tree_forest(features)
+                self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(features)
+                self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(features)
                 self.R2GBR , self.maeGBR, self.rmseGBR= self.gradient_boosted_tree_regression(features)
 
                 features['R2LR'] = self.R2LR
@@ -162,6 +158,33 @@ class Trainer:
 
 
 
+        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
+        bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
+                                     inputCols=["CRSDepTime", 
+                                                "CRSArrTime", 
+                                                "DepTime"], 
+                                     outputCols=["CatCRSDepTime", 
+                                                "CatCRSArrTime", 
+                                                "CatDepTime"])
+
+        varIdxer = StringIndexer(inputCol="OrigDest",
+                                      outputCol="IndOrigDest")
+
+        oneHot = OneHotEncoder(inputCols=['Month', 
+                                          'DayOfWeek', 
+                                          'CatCRSDepTime', 
+                                          'CatCRSArrTime', 
+                                          'IndOrigDest', 
+                                          'CatDepTime'],
+                                    outputCols=['HotMonth', 
+                                            'HotDayOfWeek', 
+                                            'HotCRSCatDepTime', 
+                                            'HotCRSCatArrTime', 
+                                            'HotIndOrigDest', 
+                                            'HotDepTime'])
+
+
+
         train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
 
         train = train.limit(1000000)
@@ -175,7 +198,7 @@ class Trainer:
         lin_reg = LinearRegression(featuresCol = 'features', labelCol="ArrDelay")
 
 
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler,  lin_reg])
+        pipeline = Pipeline(stages=[bucketizer, varIdxer, oneHot, assembler,  lin_reg])
 
 
         linParamGrid = ParamGridBuilder()\
@@ -200,33 +223,8 @@ class Trainer:
 
         return R2, mae, rmse
 
-    def split_tree_forest(self, X):
-        x = X['variables']+ ['ArrDelay']
 
-        features = self.df.select(x)
-        
-        gen_assembler = VectorAssembler(
-            inputCols=features.columns[:-1],
-            outputCol='features')
-
-        gen_output = gen_assembler.transform(self.df).select('features',
-                                                        'ArrDelay')
-
-        featureIndexer = VectorIndexer(
-                                        inputCol='features', 
-                                        outputCol='IndexedFeatures').fit(gen_output)
-
-        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
-
-        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
-
-        train = train.limit(1000000)
-        test = test.limit(250000)
-
-
-        return train, test, featureIndexer
-
-    def decision_tree_regression_train(self, train, test, featureIndexer):
+    def decision_tree_regression_train(self, X):
 
         features = self.df.select(x)
 
@@ -247,8 +245,7 @@ class Trainer:
 
 
         #false
-        TreeParamGrid = ParamGridBuilder()\        
-            .addGrid(gbt.maxDepth, [2, 10])\
+        TreeParamGrid = ParamGridBuilder().addGrid(gbt.maxDepth, [2, 10])\
             .addGrid(gbt.maxBins, [10, 20])\
             .build()
 
@@ -350,18 +347,47 @@ class Trainer:
 
         return R2, mae, rmse
 
-        
 
-    def random_forest_train(self, train, test, featureIndexer):
+    def random_forest_train(self, X):
+
+        features = self.df.select(X)
+
+        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        train = train.limit(1000000)
+        test = test.limit(250000)
+
+        features = self.df.select(X['variables'])
+        
         rf = RandomForestRegressor(
                                    featuresCol="IndexedFeatures", 
                                    labelCol='ArrDelay')
 
-        pipeline = Pipeline(stages=[featureIndexer, rf])
-        model = pipeline.fit(train)
+        assembler = VectorAssembler(inputCols=features, 
+                                    outputCol='features')
+
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, rf])
+
+
+        #false
+        TreeParamGrid = ParamGridBuilder().addGrid(rf.maxDepth, [2, 10])\
+            .addGrid(rf.maxBins, [10, 20])\
+            .build()
+
+        tvs = CrossValidator(estimator=pipeline,
+                                estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
+                                evaluator=RegressionEvaluator(labelCol="ArrDelay", 
+                                                              metricName="rmse"),
+                                numFolds=3)
+
+        # Train model.  This also runs the indexer.
+        
+        model = tvs.fit(train)
+
+        # Make predictions.
         predictions = model.transform(test)
 
-
+        # Select example rows to display.
         R2, mae, rmse = self.metrics(predictions)
 
         rfModel = model.stages[1]
@@ -404,3 +430,35 @@ class Trainer:
 
         return R2, mae, rmse
                                         
+
+
+
+
+    def hotEncoding(self,df):
+
+
+        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
+        self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
+                                     inputCols=["CRSDepTime", 
+                                                "CRSArrTime", 
+                                                "DepTime"], 
+                                     outputCols=["CatCRSDepTime", 
+                                                "CatCRSArrTime", 
+                                                "CatDepTime"])
+
+        self.varIdxer = StringIndexer(inputCol="OrigDest",
+                                      outputCol="IndOrigDest")
+
+        self.oneHot = OneHotEncoder(inputCols=['Month', 
+                                          'DayOfWeek', 
+                                          'CatCRSDepTime', 
+                                          'CatCRSArrTime', 
+                                          'IndOrigDest', 
+                                          'CatDepTime'],
+                                    outputCols=['HotMonth', 
+                                            'HotDayOfWeek', 
+                                            'HotCRSCatDepTime', 
+                                            'HotCRSCatArrTime', 
+                                            'HotIndOrigDest', 
+                                            'HotDepTime'])
+

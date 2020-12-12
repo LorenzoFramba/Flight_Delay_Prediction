@@ -13,7 +13,7 @@ class Clean:
         self.sc = sc
         self.df = self.changeVar(df)
         self.df = self.removeNaN(self.df)
-        self.df= self.hotEncoding(self.df)
+        #self.df= self.hotEncoding(self.df)
         self.X = self.variable_selection()
         
 
@@ -53,9 +53,7 @@ class Clean:
         df = df.withColumn('OrigDest', 
                     sf.concat(sf.col('Origin'),sf.lit('_'), sf.col('Dest')))
         df = df.drop(*["Origin", "Dest"])
-
         df = df.withColumn("Speed", sf.round(col("Distance") / col("CRSElapsedTime"), 2))
-        df = df.drop(*["Distance", "CRSElapsedTime"])
         
        
         return df
@@ -69,38 +67,8 @@ class Clean:
         df = df.withColumn("CRSArrTime", df["CRSArrTime"].cast(IntegerType()))
         df = df.withColumn("DepTime", df["DepTime"].cast(IntegerType()))
 
-
         return df
 
-
-    def hotEncoding(self,df):
-
-        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
-        self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
-                                     inputCols=["CRSDepTime", 
-                                                "CRSArrTime", 
-                                                "DepTime"], 
-                                     outputCols=["CatCRSDepTime", 
-                                                "CatCRSArrTime", 
-                                                "CatDepTime"])
-
-        self.varIdxer = StringIndexer(inputCol="OrigDest",
-                                      outputCol="IndOrigDest")
-
-        self.oneHot = OneHotEncoder(inputCols=['Month', 
-                                          'DayOfWeek', 
-                                          'CatCRSDepTime', 
-                                          'CatCRSArrTime', 
-                                          'IndOrigDest', 
-                                          'CatDepTime'],
-                       outputCols=['HotMonth', 
-                                  'HotDayOfWeek', 
-                                  'HotCRSCatDepTime', 
-                                  'HotCRSCatArrTime', 
-                                  'HotIndOrigDest', 
-                                  'HotDepTime'])
-                                  
-        return df
 
 
     def variable_selection(self):
