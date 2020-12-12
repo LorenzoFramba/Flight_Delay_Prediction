@@ -27,6 +27,17 @@ class Trainer:
         self.sc = sc
         self.df = cleaned_data.df
         self.X =cleaned_data.X
+        self.oneHot = cleaned_data.oneHot
+        self.varIdxer = cleaned_data.varIdxer
+        self.bucketizer = cleaned_data.bucketizer
+
+
+        self.train, self.test = self.df.randomSplit([.5, 0.1], seed=1234)  
+
+        self.train = self.train.limit(100)
+        self.test = self.test.limit(25)
+
+        
         
         #Views(config,df).correlation()
         
@@ -81,7 +92,6 @@ class Trainer:
 
         elif(self.cfg.model == 'decision_tree_regression'):
             for features in self.X:
-                #train, test, featureIndexer = self.split_tree_forest(features)
                 self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(features)
                 features['R2DT'] = self.R2DT
                 features['maeDT'] = self.maeDT
@@ -92,24 +102,9 @@ class Trainer:
                 self.Visualize_Results.append(x)
                 print(x)
 
-        elif(self.cfg.model == 'generalized_linear_regression_train'):
-            for features in self.X:
-                self.R2GLR, self.maeGLR, self.rmseGLR = self.generalized_linear_regression_train(features)
-
-                features['R2GLR'] = self.R2GLR
-                features['maeGLR'] = self.maeGLR
-                features['rmseGLR'] = self.rmseGLR
-                results_GLR.append(features)
-
-            for x in results_GLR:
-                self.Visualize_Results.append(x)
-                print(x)
-
         elif(self.cfg.model == 'all'):
             for features in self.X:
                 self.R2LR , self.maeLR, self.rmseLR= self.linear_regression_train(features)
-                #self.R2GLR, self.maeGLR, self.rmseGLR  = self.generalized_linear_regression_train(features)
-                #train, test, featureIndexer = self.split_tree_forest(features)
                 self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(features)
                 self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(features)
                 self.R2GBR , self.maeGBR, self.rmseGBR= self.gradient_boosted_tree_regression(features)
@@ -117,10 +112,6 @@ class Trainer:
                 features['R2LR'] = self.R2LR
                 features['maeLR'] = self.maeLR
                 features['rmseLR'] = self.rmseLR
-
-                #features['R2GLR'] = self.R2GLR
-                #features['maeGLR'] = self.maeGLR
-                #features['rmseGLR'] = self.rmseGLR
 
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
@@ -141,184 +132,18 @@ class Trainer:
                 print(x)
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
-                    '\n General Linear Regression R2 : {R2GLR}\t'
                     '\n Random Forest R2 : {R2RF}\t'
                     '\n Decision Tree Regression R2  : {R2DT}\t'
                     '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(
                     R2LR=self.R2LR, 
                     R2RF=self.R2RF, 
                     R2DT=self.R2DT, 
-                    R2GBR = self.R2GBR,
-                    R2GLR = self.R2GLR )) 
+                    R2GBR = self.R2GBR)) 
         else:
             print("nothing was selected")
 
 
-    def linear_regression_train(self,X):
-
-
-
-        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
-        bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
-                                     inputCols=["CRSDepTime", 
-                                                "CRSArrTime", 
-                                                "DepTime"], 
-                                     outputCols=["CatCRSDepTime", 
-                                                "CatCRSArrTime", 
-                                                "CatDepTime"])
-
-        varIdxer = StringIndexer(inputCol="OrigDest",
-                                      outputCol="IndOrigDest")
-
-        oneHot = OneHotEncoder(inputCols=['Month', 
-                                          'DayOfWeek', 
-                                          'CatCRSDepTime', 
-                                          'CatCRSArrTime', 
-                                          'IndOrigDest', 
-                                          'CatDepTime'],
-                                    outputCols=['HotMonth', 
-                                            'HotDayOfWeek', 
-                                            'HotCRSCatDepTime', 
-                                            'HotCRSCatArrTime', 
-                                            'HotIndOrigDest', 
-                                            'HotDepTime'])
-
-
-
-        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
-
-        train = train.limit(1000000)
-        test = test.limit(250000)
-
-        features = self.df.select(X['variables'])
-        assembler = VectorAssembler(
-                    inputCols=features.columns,
-                    outputCol="features")
-
-        lin_reg = LinearRegression(featuresCol = 'features', labelCol="ArrDelay")
-
-
-        pipeline = Pipeline(stages=[bucketizer, varIdxer, oneHot, assembler,  lin_reg])
-
-
-        linParamGrid = ParamGridBuilder()\
-                        .addGrid(lin_reg.regParam, [0.1, 0.01]) \
-                        .addGrid(lin_reg.fitIntercept, [False, True])\
-                        .addGrid(lin_reg.elasticNetParam, [0.0, 1.0])\
-                        .build()
-
-
-        tvs = CrossValidator(estimator=pipeline,\
-                           estimatorParamMaps = linParamGrid,  
-                           evaluator=RegressionEvaluator(labelCol="ArrDelay", metricName="rmse"),\
-                           numFolds=3)
-                           #trainRatio=0.85)
-
-        model = tvs.fit(train)
-
-        predictions = model.transform(test)
-
-        R2, mae, rmse = self.metrics(predictions)
-
-
-        return R2, mae, rmse
-
-
-    def decision_tree_regression_train(self, X):
-
-        features = self.df.select(x)
-
-        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
-
-        train = train.limit(1000000)
-        test = test.limit(250000)
-
-        features = self.df.select(X['variables'])
-        
-        dt1 = DecisionTreeRegressor(featuresCol="IndexedFeatures", 
-                                    labelCol='ArrDelay')
-
-        assembler = VectorAssembler(inputCols=features, 
-                                    outputCol='features')
-
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, dt1])
-
-
-        #false
-        TreeParamGrid = ParamGridBuilder().addGrid(gbt.maxDepth, [2, 10])\
-            .addGrid(gbt.maxBins, [10, 20])\
-            .build()
-
-        tvs = CrossValidator(estimator=pipeline,
-                                estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
-                                evaluator=RegressionEvaluator(labelCol="ArrDelay", 
-                                                              metricName="rmse"),
-                                numFolds=3)
-
-        # Train model.  This also runs the indexer.
-        
-        model = tvs.fit(train)
-
-        # Make predictions.
-        predictions = model.transform(test)
-
-        # Select example rows to display.
-        R2, mae, rmse = self.metrics(predictions)
-
-        treeModel = model.stages[1]
-        # summary only
-        print(treeModel)
-        return R2, mae, rmse
-
-    def gradient_boosted_tree_regression(self, X):
-
-
-        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
-
-        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
-
-        train = train.limit(1000000)
-        test = test.limit(250000)
-        
-        features = self.df.select(X['variables'])
-        
-
-        assembler = VectorAssembler(inputCols=features, 
-                                    outputCol='features')
-
-        gbt = GBTRegressor(featuresCol="features", 
-                           labelCol="ArrDelay", 
-                           maxIter=10)
-
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, gbt])
-
-        #original
-        TreeParamGrid = ParamGridBuilder()\
-            .addGrid(gbt.maxDepth, [2, 10])\
-            .addGrid(gbt.maxBins, [10, 20])\
-            .build()
-
-        tvs = CrossValidator(estimator=pipeline,
-                                estimatorParamMaps=TreeParamGrid, #remove if don't want to use ParamGridBuilder
-                                evaluator=RegressionEvaluator(labelCol="ArrDelay", 
-                                                              metricName="rmse"),
-                                numFolds=3)
-                            #trainRatio=0.85)
-
-        model = tvs.fit(train)
-
-        predictions = model.transform(test)
-
-        R2, mae, rmse = self.metrics(predictions)
-
-        gbtModel = model.stages[1]
-        print(gbtModel)  # summary only
-
-        return R2, mae, rmse
-
-
     def metrics(self, predictions):
-
 
         x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
         predictions = predictions.withColumn('Accuracy',abs(x))
@@ -347,31 +172,87 @@ class Trainer:
 
         return R2, mae, rmse
 
+    def linear_regression_train(self,X):
 
-    def random_forest_train(self, X):
+        assembler = VectorAssembler(
+                    inputCols=X['variables'],
+                    outputCol="features")
 
-        features = self.df.select(X)
+        lin_reg = LinearRegression(featuresCol = 'features', labelCol="ArrDelay")
 
-        train, test = self.df.randomSplit([.5, 0.1], seed=1234)  
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler,  lin_reg])
 
-        train = train.limit(1000000)
-        test = test.limit(250000)
+        linParamGrid = ParamGridBuilder()\
+                        .addGrid(lin_reg.regParam, [0.1, 0.01]) \
+                        .addGrid(lin_reg.fitIntercept, [False, True])\
+                        .addGrid(lin_reg.elasticNetParam, [0.0, 1.0])\
+                        .build()
 
-        features = self.df.select(X['variables'])
+        tvs = CrossValidator(estimator=pipeline,\
+                           estimatorParamMaps = linParamGrid,  
+                           evaluator=RegressionEvaluator(labelCol="ArrDelay", metricName="rmse"),\
+                           numFolds=3)
+                           #trainRatio=0.85)
+
+        model = tvs.fit(self.train)
+        predictions = model.transform(self.test)
+
+        print("Linear Regression")
+        print(X['variables'])
+
+        R2, mae, rmse = self.metrics(predictions)
+
+        return R2, mae, rmse
+
+
+    def decision_tree_regression_train(self, X):
         
-        rf = RandomForestRegressor(
-                                   featuresCol="IndexedFeatures", 
-                                   labelCol='ArrDelay')
-
-        assembler = VectorAssembler(inputCols=features, 
+        assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
 
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, rf])
+        dt1 = DecisionTreeRegressor(featuresCol="features", 
+                                    labelCol='ArrDelay')
+
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, dt1])
+
+        dtparamGrid = (ParamGridBuilder()
+             .addGrid(dt1.maxDepth, [2, 5, 10, 20, 30])
+             #.addGrid(dt.maxDepth, [2, 5, 10])
+             .addGrid(dt1.maxBins, [10, 20, 40, 80, 100])
+             #.addGrid(dt.maxBins, [10, 20])
+             .build())
+
+        dtcv = CrossValidator(estimator = pipeline,
+                            estimatorParamMaps = dtparamGrid,
+                            evaluator =RegressionEvaluator(labelCol="ArrDelay", 
+                                                              metricName="rmse"),
+                            numFolds = 3)
+
+        model = dtcv.fit(self.train)
+        predictions = model.transform(self.test)
 
 
-        #false
-        TreeParamGrid = ParamGridBuilder().addGrid(rf.maxDepth, [2, 10])\
-            .addGrid(rf.maxBins, [10, 20])\
+        print("Decision Tree")
+        print(X['variables'])
+        R2, mae, rmse = self.metrics(predictions)
+
+        return R2, mae, rmse
+
+    def gradient_boosted_tree_regression(self, X):
+
+        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+
+        assembler = VectorAssembler(inputCols=X['variables'], 
+                                    outputCol='features')
+        gbt = GBTRegressor(featuresCol="features", 
+                           labelCol="ArrDelay", 
+                           maxIter=10)
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, gbt])
+
+        #original
+        TreeParamGrid = ParamGridBuilder()\
+            .addGrid(gbt.maxDepth, [2, 10])\
+            .addGrid(gbt.maxBins, [10, 20])\
             .build()
 
         tvs = CrossValidator(estimator=pipeline,
@@ -379,86 +260,48 @@ class Trainer:
                                 evaluator=RegressionEvaluator(labelCol="ArrDelay", 
                                                               metricName="rmse"),
                                 numFolds=3)
+                            #trainRatio=0.85)
 
-        # Train model.  This also runs the indexer.
+        model = tvs.fit(self.train)
+        predictions = model.transform(self.test)
+
+        print("Gradient boosted tree")
+        print(X['variables'])
+        R2, mae, rmse = self.metrics(predictions)
+
+        return R2, mae, rmse
+
+    def random_forest_train(self, X):
+
+        assembler = VectorAssembler(inputCols=X['variables'], 
+                                    outputCol='features')
         
-        model = tvs.fit(train)
+        rf = RandomForestRegressor(featuresCol="features", 
+                                   labelCol='ArrDelay')
 
-        # Make predictions.
-        predictions = model.transform(test)
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, rf])
 
-        # Select example rows to display.
-        R2, mae, rmse = self.metrics(predictions)
+        rfparamGrid = (ParamGridBuilder()
+                    #.addGrid(rf.maxDepth, [2, 5, 10, 20, 30])
+                    .addGrid(rf.maxDepth, [2, 5, 10])
+                    #.addGrid(rf.maxBins, [10, 20, 40, 80, 100])
+                    .addGrid(rf.maxBins, [5, 10, 20])
+                    #.addGrid(rf.numTrees, [5, 20, 50, 100, 500])
+                    .addGrid(rf.numTrees, [5, 20, 50])
+                    .build())
 
-        rfModel = model.stages[1]
-        print(rfModel)
+        # Create 3-fold CrossValidator
+        rfcv = CrossValidator(estimator = pipeline,
+                            estimatorParamMaps = rfparamGrid,
+                            evaluator = RegressionEvaluator(labelCol="ArrDelay", 
+                                                              metricName="rmse"),
+                            numFolds = 3)
+        
+        model = rfcv.fit(self.train)
+        predictions = model.transform(self.test)
 
-        return R2, mae, rmse
-
-
-    def generalized_linear_regression_train(self,X):
-
-
-
-
-        #features = self.df.select(X['variables'])
-        features = self.df.select(['DepDelay', 'TaxiOut']) ## Currently, GeneralizedLinearRegression only supports number of features <= 4096. Found 4413 in the input dataset.
-
-
-        gen_assembler = VectorAssembler(
-                        inputCols=features.columns,
-                        outputCol='features')
-
-        gen_output = gen_assembler.transform(self.df).select('features','ArrDelay')
-        gen_train,gen_test = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
-
-        glr = GeneralizedLinearRegression(family="gaussian", 
-                                          link="Identity", 
-                                          maxIter=10, 
-                                          regParam=self.cfg.regParam, 
-                                          labelCol='ArrDelay')
-        gen_model = glr.fit(gen_train)
-        print("Coefficients: " + str(gen_model.coefficients))
-        print("\nIntercept: " + str(gen_model.intercept)) 
-
-        predictions = gen_model.transform(gen_test)
-        x =((predictions['ArrDelay']-predictions['prediction'])/predictions['ArrDelay'])*100
-        predictions = predictions.withColumn('Accuracy',abs(x))
-
-
+        print("Random Forest")
+        print(X['variables'])
         R2, mae, rmse = self.metrics(predictions)
 
         return R2, mae, rmse
-                                        
-
-
-
-
-    def hotEncoding(self,df):
-
-
-        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
-        self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
-                                     inputCols=["CRSDepTime", 
-                                                "CRSArrTime", 
-                                                "DepTime"], 
-                                     outputCols=["CatCRSDepTime", 
-                                                "CatCRSArrTime", 
-                                                "CatDepTime"])
-
-        self.varIdxer = StringIndexer(inputCol="OrigDest",
-                                      outputCol="IndOrigDest")
-
-        self.oneHot = OneHotEncoder(inputCols=['Month', 
-                                          'DayOfWeek', 
-                                          'CatCRSDepTime', 
-                                          'CatCRSArrTime', 
-                                          'IndOrigDest', 
-                                          'CatDepTime'],
-                                    outputCols=['HotMonth', 
-                                            'HotDayOfWeek', 
-                                            'HotCRSCatDepTime', 
-                                            'HotCRSCatArrTime', 
-                                            'HotIndOrigDest', 
-                                            'HotDepTime'])
-

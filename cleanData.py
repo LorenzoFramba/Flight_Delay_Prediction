@@ -15,6 +15,7 @@ class Clean:
         self.df = self.removeNaN(self.df)
         #self.df= self.hotEncoding(self.df)
         self.X = self.variable_selection()
+        self.OneHotEncoder()
         
 
     def removeNaN(self, df):
@@ -69,7 +70,31 @@ class Clean:
 
         return df
 
+    def OneHotEncoder(self):
+        splits = [-float("inf"), 500, 1200, 1700, float("inf")]
+        self.bucketizer = Bucketizer(splitsArray= [splits, splits, splits], 
+                                     inputCols=["CRSDepTime", 
+                                                "CRSArrTime", 
+                                                "DepTime"], 
+                                     outputCols=["CatCRSDepTime", 
+                                                "CatCRSArrTime", 
+                                                "CatDepTime"])
 
+        self.varIdxer = StringIndexer(inputCol="OrigDest", 
+                                      outputCol="IndOrigDest").setHandleInvalid("skip")
+
+        self.oneHot = OneHotEncoder(inputCols=['Month', 
+                                          'DayOfWeek', 
+                                          'CatCRSDepTime', 
+                                          'CatCRSArrTime', 
+                                          'IndOrigDest', 
+                                          'CatDepTime'],
+                                    outputCols=['HotMonth', 
+                                            'HotDayOfWeek', 
+                                            'HotCRSCatDepTime', 
+                                            'HotCRSCatArrTime', 
+                                            'HotIndOrigDest', 
+                                            'HotDepTime'])
 
     def variable_selection(self):
 
