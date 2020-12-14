@@ -34,15 +34,17 @@ class Trainer:
 
         self.train, self.test = self.df.randomSplit([.5, 0.1], seed=1234)  
 
-        self.train = self.train.limit(100)
-        self.test = self.test.limit(25)
+        self.train = self.train.limit(1000000)
+        self.test = self.test.limit(250000)
+
+
+        #self.train, self.test = self.df.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
 
         
         
         #Views(config,df).correlation()
         
         results_LR=[]
-        results_GLR=[]
         results_RF=[]
         results_DT=[]
         results_GBR=[]
@@ -79,7 +81,6 @@ class Trainer:
 
         elif(self.cfg.model == 'random_forest'):
             for features in self.X:
-                #train, test, featureIndexer = self.split_tree_forest(features)
                 self.R2RF , self.maeRF, self.rmseRF = self.random_forest_train(features)
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
@@ -104,10 +105,12 @@ class Trainer:
 
         elif(self.cfg.model == 'all'):
             for features in self.X:
+                
                 self.R2LR , self.maeLR, self.rmseLR= self.linear_regression_train(features)
-                self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(features)
                 self.R2DT , self.maeDT, self.rmseDT = self.decision_tree_regression_train(features)
                 self.R2GBR , self.maeGBR, self.rmseGBR= self.gradient_boosted_tree_regression(features)
+                self.R2RF , self.maeRF, self.rmseRF= self.random_forest_train(features)
+
 
                 features['R2LR'] = self.R2LR
                 features['maeLR'] = self.maeLR
@@ -173,6 +176,16 @@ class Trainer:
         return R2, mae, rmse
 
     def linear_regression_train(self,X):
+
+
+        #A.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
+        #A.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
+        #A.append({ "name": "X3", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'HotDepTime']})
+        #A.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotMonth', 'Speed']})
+        #A.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotIndOrigDest', 'Speed']})
+        #A.append({ "name": "X6", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']})
+
+        #X[2]['variables']
 
         assembler = VectorAssembler(
                     inputCols=X['variables'],

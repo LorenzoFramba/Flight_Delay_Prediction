@@ -106,6 +106,7 @@ class Clean:
         X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotIndOrigDest', 'Speed']})
         X.append({ "name": "X6", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']})
 
+        
         return X
 
 
