@@ -67,6 +67,7 @@ class Clean:
         df = df.withColumn("CRSDepTime", df["CRSDepTime"].cast(IntegerType()))
         df = df.withColumn("CRSArrTime", df["CRSArrTime"].cast(IntegerType()))
         df = df.withColumn("DepTime", df["DepTime"].cast(IntegerType()))
+        df = df.withColumn("DayOfWeek", df["DayOfWeek"].cast(IntegerType()))
 
         return df
 
