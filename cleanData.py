@@ -99,9 +99,8 @@ class Clean:
 
     def variable_selection(self):
         X = []
-        if self.cfg.variables== 'X1-X2':
+        if self.cfg.variables== 'X1':
             X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
-            X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
         elif self.cfg.variables== 'all':
             X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
             X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})      
