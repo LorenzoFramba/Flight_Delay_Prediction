@@ -54,7 +54,7 @@ class Clean:
         df = df.withColumn('OrigDest', 
                     sf.concat(sf.col('Origin'),sf.lit('_'), sf.col('Dest')))
         df = df.drop(*["Origin", "Dest"])
-        df = df.withColumn("Speed", sf.round(col("Distance") / col("CRSElapsedTime"), 2))
+        df = df.withColumn("Speed", sf.round(col("Distance") / col("CRSElapsedTime"), 2).cast(DoubleType()))
         
        
         return df
@@ -85,27 +85,26 @@ class Clean:
                                       outputCol="IndOrigDest").setHandleInvalid("skip")
 
         self.oneHot = OneHotEncoder(inputCols=['Month', 
-                                          'DayOfWeek', 
+                                          'DayOfWeek',
                                           'CatCRSDepTime', 
                                           'CatCRSArrTime', 
                                           'IndOrigDest', 
                                           'CatDepTime'],
                                     outputCols=['HotMonth', 
-                                            'HotDayOfWeek', 
+                                            'HotDayOfWeek',
                                             'HotCRSCatDepTime', 
                                             'HotCRSCatArrTime', 
                                             'HotIndOrigDest', 
-                                            'HotDepTime'])
+                                            'HotDepTime']).setHandleInvalid("keep")
 
     def variable_selection(self):
 
         X = []
-        X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
-        X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
-        X.append({ "name": "X3", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'HotDepTime']})
-        X.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotMonth', 'Speed']})
-        X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'HotIndOrigDest', 'Speed']})
-        X.append({ "name": "X6", "variables": ['DepDelay', 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']})
+        #X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
+        #X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
+        X.append({ "name": "X3", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']})
+        X.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']})
+        X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']})
 
         
         return X
