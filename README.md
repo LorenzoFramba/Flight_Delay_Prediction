@@ -54,11 +54,11 @@ python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_tra
 
 - The selection of the variables is done by analyng patterns and correlation matrix ( select *--view* True to watch it). We selected this following variables together
 
-"X1": ['DepDelay', 'TaxiOut']
-"X2": ['DepDelay', 'TaxiOut',  'HotDepTime']     
-"X3": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']
-"X4": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']
-"X5": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']
+- "X1": ['DepDelay', 'TaxiOut']
+- "X2": ['DepDelay', 'TaxiOut',  'HotDepTime']     
+- "X3": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']
+- "X4": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']
+- "X5": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']
 
 - By default, the model will run with the easier variable: X1. You have the option to use X5, which is the best performing one, by selecting "best" on *--variables*. You can also select "all" to try everything. 
 
