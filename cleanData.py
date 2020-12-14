@@ -100,11 +100,11 @@ class Clean:
     def variable_selection(self):
 
         X = []
-        #X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
-        #X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
-        X.append({ "name": "X3", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']})
-        X.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']})
-        X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']})
+        X.append({ "name": "X1", "variables": ['DepDelay', 'TaxiOut']})
+        X.append({ "name": "X2", "variables": ['DepDelay', 'TaxiOut',  'HotDepTime']})
+        #X.append({ "name": "X3", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']})
+        #X.append({ "name": "X4", "variables": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']})
+        #X.append({ "name": "X5", "variables": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']})
 
         
         return X
