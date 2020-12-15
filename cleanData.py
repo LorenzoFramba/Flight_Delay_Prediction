@@ -44,11 +44,10 @@ class Clean:
                        "FlightNum"]) #Droping unimportant categorical variables
 
 
-        old_amount = df.count()
-        df = df.na.drop("any")
-        new_amount = df.count()
         
-        print( "Before: " +str(old_amount) + ",\nAfter: " + str(new_amount) + ",\n%:"+str(round(new_amount/old_amount, 2)*100))
+        df = df.na.drop("any")
+        
+        #print( "Before: " +str(old_amount) + ",\nAfter: " + str(new_amount) + ",\n%:"+str(round(new_amount/old_amount, 2)*100))
 
         df = df.withColumn('OrigDest', 
                     sf.concat(sf.col('Origin'),sf.lit('_'), sf.col('Dest')))
