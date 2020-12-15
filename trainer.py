@@ -4,7 +4,7 @@ from pyspark.sql.functions import abs
 from pyspark.ml import Pipeline
 from pyspark.mllib.tree import RandomForest, RandomForestModel
 from pyspark.mllib.util import MLUtils
-from pyspark.ml.feature import StandardScaler
+from pyspark.ml.feature import MinMaxScaler
 from pyspark.ml.feature import VectorIndexer, VectorAssembler
 from pyspark.ml.regression import LinearRegression
 from pyspark.ml.regression import GeneralizedLinearRegression
@@ -131,8 +131,7 @@ class Trainer:
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
                     '\n Random Forest R2 : {R2RF}\t'
-                    '\n Decision Tree Regression R2  : {R2DT}\t'
-                    '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(
+                    '\n Decision Tree Regression R2  : {R2DT}\t'              '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(
                     R2LR=self.R2LR, 
                     R2RF=self.R2RF, 
                     R2DT=self.R2DT, 
@@ -174,11 +173,13 @@ class Trainer:
 
         assembler = VectorAssembler(
                     inputCols=X['variables'],
-                    outputCol="features")
+                    outputCol='features')
 
-        lin_reg = LinearRegression(featuresCol = 'features', labelCol="ArrDelay")
+        scaler = MinMaxScaler(inputCol='features', outputCol='scaled')
 
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler,  lin_reg])
+        lin_reg = LinearRegression(featuresCol='scaled', labelCol='ArrDelay')
+
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler,  scaler, lin_reg])
 
         linParamGrid = ParamGridBuilder()\
                         .addGrid(lin_reg.regParam, [0.1, 0.01]) \
@@ -208,10 +209,12 @@ class Trainer:
         assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
 
-        dt1 = DecisionTreeRegressor(featuresCol="features", 
+        scaler = MinMaxScaler(inputCol='features', outputCol='scaled')
+
+        dt1 = DecisionTreeRegressor(featuresCol='scaled',
                                     labelCol='ArrDelay')
 
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, dt1])
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, scaler,  dt1])
 
         dtparamGrid = (ParamGridBuilder()
              .addGrid(dt1.maxDepth, [2, 5, 10, 20, 30])
@@ -242,10 +245,13 @@ class Trainer:
 
         assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
-        gbt = GBTRegressor(featuresCol="features", 
+
+        scaler = MinMaxScaler(inputCol='features', outputCol='scaled')
+
+        gbt = GBTRegressor(featuresCol='scaled',
                            labelCol="ArrDelay", 
                            maxIter=10)
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, gbt])
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, scaler,  gbt])
 
         #original
         TreeParamGrid = ParamGridBuilder()\
@@ -273,11 +279,13 @@ class Trainer:
 
         assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
-        
-        rf = RandomForestRegressor(featuresCol="features", 
+
+        scaler = MinMaxScaler(inputCol='features', outputCol='scaled')
+
+        rf = RandomForestRegressor(featuresCol='scaled',
                                    labelCol='ArrDelay')
 
-        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, rf])
+        pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, scaler, rf])
 
         rfparamGrid = (ParamGridBuilder()
                     #.addGrid(rf.maxDepth, [2, 5, 10, 20, 30])
