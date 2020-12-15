@@ -13,7 +13,6 @@ class Clean:
         self.sc = sc
         self.df = self.changeVar(df)
         self.df = self.removeNaN(self.df)
-        #self.df= self.hotEncoding(self.df)
         self.X = self.variable_selection()
         self.OneHotEncoder()
         
