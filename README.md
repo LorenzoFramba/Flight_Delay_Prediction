@@ -24,6 +24,8 @@ here are all the dependencies needed for the project
 import os
 os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
 os.environ["SPARK_HOME"] = "/installation_folder/spark-2.4.7-bin-hadoop2.7"
+
+!pip3 install pyspark
 ```
 
 
@@ -46,8 +48,20 @@ python main.py --dataset 'year.csv'
 - You also have the option to choose the train/test split (default is *75 / 25*), and also the ML model type  between *'linear_regression', 'generalized_linear_regression_train ', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
 The *all* option will train and test all the models, compare their respective R2 and select the best performing one.
 
-- You have the option to set hyperparameters, such as *--elasticNetParam* or *--regParam* . 
-
 ```bash
 python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75
+```
+
+- The selection of the variables is done by analyng patterns and correlation matrix ( select *--view* True to watch it). We selected this following variables together
+"X1": ['DepDelay', 'TaxiOut']
+"X2": ['DepDelay', 'TaxiOut',  'HotDepTime']     
+"X3": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed']
+"X4": ['DepDelay', 'TaxiOut', 'HotDayOfWeek', 'Speed', 'HotMonth']
+"X5": ['DepDelay', 'TaxiOut', 'Speed', 'HotDepTime', 'HotCRSCatDepTime', 'HotCRSCatArrTime']
+
+- By default, the model will run with the easier variable: X1. You have the option to use X5, which is the best performing one, by selecting "best" on *--variables*. You can also select "all" to try everything. 
+
+
+```bash
+python main.py --dataset 'year.csv' --model 'all' --split_size_train 75 --variables 'best' --view True 
 ```
