@@ -21,24 +21,23 @@ def main(config):
 
     data = Data(config)
 
-    #df = Clean(config, data.df, data.spark, data.sc).df
-
     if data.proceed:
+
         data_cleaned = Clean(config, data.df, data.spark, data.sc)
-
-
         trainer = Trainer(config, data.spark, data.sc, data_cleaned)
+
         if(str(config.view).lower() == 'true'):
+
             Views(config,data_cleaned.df,trainer.Visualize_Results).correlation_matrix()
             Views(config,data_cleaned.df,trainer.Visualize_Results).scatterPlot()
+
             if(config.model == 'all'):
+
                 Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_R2()
                 Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_MAE()
                 Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_RMSE()
 
         data.sc.stop()
-
-
 
 if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='2004.csv', required=True,  help='name of Airbus dataset to be used')
