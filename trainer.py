@@ -31,15 +31,15 @@ class Trainer:
         self.varIdxer = cleaned_data.varIdxer
         self.bucketizer = cleaned_data.bucketizer
 
-        print("Training set : ", self.cfg.train_sample_size)
-        print("Testing set : ", int(self.cfg.train_sample_size * ((100 - self.cfg.split_size_train )/100)))
+        print("Training set : ", int(self.cfg.dataset_size * ( self.cfg.split_size_train/100 )))
+        print("Testing set : ", int(self.cfg.dataset_size * ((100 - self.cfg.split_size_train )/100)))
 
-        if self.cfg.train_sample_size == 0:
+        if self.cfg.dataset_size == 0:
             self.train, self.test = self.df.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
         else:
             self.train, self.test = self.df.randomSplit([.5, 0.1], seed=1234)
-            self.train = self.train.limit(int(self.cfg.train_sample_size))
-            self.test = self.test.limit(int(self.cfg.train_sample_size * ((100 - self.cfg.split_size_train )/100)))
+            self.train = self.train.limit(int(self.cfg.dataset_size * ( self.cfg.split_size_train/100 )))
+            self.test = self.test.limit(int(self.cfg.dataset_size * ((100 - self.cfg.split_size_train )/100)))
         
         results_LR=[]    
         results_RF=[]
