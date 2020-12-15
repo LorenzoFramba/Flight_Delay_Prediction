@@ -47,7 +47,7 @@ python main.py --dataset 'year.csv'
 
 - You also have the option to choose the train/test split (default is *75 / 25*), and the sample size for training with *--train_sample_size*. 
 
-you also the ML model type  between *'linear_regression', 'generalized_linear_regression_train ', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
+you also the ML model type  between *'linear_regression', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
 The *all* option will train and test all the models, compare their respective R2 and select the best performing one.
 
 ```bash
