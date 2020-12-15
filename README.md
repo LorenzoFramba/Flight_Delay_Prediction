@@ -45,13 +45,13 @@ cd Airbus_Big_Data
 python main.py --dataset 'year.csv' 
 ```
 
-- You also have the option to choose the train/test split (default is *75 / 25*), and the sample size for training with *--train_sample_size*. 
+- You also have the option to choose the train/test split (default is *75 / 25*), and the dataset sample size for training and testing with *--dataset_size*. 
 
 you also the ML model type  between *'linear_regression', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
 The *all* option will train and test all the models, compare their respective R2 and select the best performing one.
 
 ```bash
-python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75 --train_sample_size 100000
+python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75 --dataset_size 100000
 ```
 
 - The selection of the variables is done by analyng patterns and correlation matrix ( select *--view* True to watch it). We selected this following variables together

@@ -41,9 +41,10 @@ class Data:
                       inferSchema='true')
 
         max = getDf.count()
-        if(self.cfg.train_sample_size > max):
+
+        if(self.cfg.dataset_size > max):
             self.proceed = False
-            print("Please, select a train_sample_size smaller than ",max )
+            print("Please, select a dataset_size smaller than ", max)
 
         return getDf
 
