@@ -9,8 +9,6 @@ from pyspark.ml.feature import VectorAssembler
 import findspark
 import pandas as pd
 import argparse
-import altair as alt
-import pyspark
 import random
 
 
@@ -44,7 +42,7 @@ def main(config):
 if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='2004.csv', required=True,  help='name of Airbus dataset to be used')
     parser.add_argument('--model', type=str, default='linear_regression', choices=['linear_regression', 'generalized_linear_regression_train', 'decision_tree_regression', 'gradient_boosted_tree_regression'  ,'random_forest',  'all'],   help='type of training model')
-    parser.add_argument('--variables', type=str, default='X1-X2', choices=['X1', 'best', 'all'],   help='type of variables for training model')
+    parser.add_argument('--variables', type=str, default='X1', choices=['X1', 'best', 'all'],   help='type of variables for training model')
     parser.add_argument('--path', type=str, default='' )
     parser.add_argument('--split_size_train', type=int, default='75' , choices=range(1, 100),  help='percentage of observations in the training set')
     #parser.add_argument('--regParam', type=float, default='0.3', help='specifies the regularization parameter in ALS, corresponds to λ' )

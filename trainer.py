@@ -32,15 +32,15 @@ class Trainer:
         self.bucketizer = cleaned_data.bucketizer
 
 
-        self.train, self.test = self.df.randomSplit([.5, 0.1], seed=1234)
+        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
 
+        self.train, self.test = self.df.randomSplit([.5, 0.1], seed=1234)
         self.train = self.train.limit(400000)
         self.test = self.test.limit(100000)
         
         #Views(config,df).correlation()
         
-        results_LR=[]
-        results_GLR=[]
+        results_LR=[]    
         results_RF=[]
         results_DT=[]
         results_GBR=[]
@@ -78,7 +78,6 @@ class Trainer:
 
         elif(self.cfg.model == 'random_forest'):
             for features in self.X:
-                #train, test, featureIndexer = self.split_tree_forest(features)
                 self.R2RF , self.maeRF, self.rmseRF = self.random_forest_train(features)
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
@@ -132,9 +131,10 @@ class Trainer:
 
             print(  '\n Linear Regression R2 : {R2LR}\t'
                     '\n Random Forest R2 : {R2RF}\t'
-                    '\n Decision Tree Regression R2  : {R2DT}\t'              '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(
-                    R2LR=self.R2LR, 
+                    '\n Decision Tree Regression R2  : {R2DT}\t'              
+                    '\n Gradient Booster Tree Regression R2  : {R2GBR}\t'.format(   
                     R2RF=self.R2RF, 
+                    R2LR=self.R2LR, 
                     R2DT=self.R2DT, 
                     R2GBR = self.R2GBR)) 
         else:
@@ -243,7 +243,7 @@ class Trainer:
 
     def gradient_boosted_tree_regression(self, X):
 
-        #(train, test) = gen_output.randomSplit([self.cfg.split_size_train / 100 , (100 - self.cfg.split_size_train ) / 100])
+        
 
         assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
