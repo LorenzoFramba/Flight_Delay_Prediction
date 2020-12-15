@@ -12,9 +12,9 @@ from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.regression import DecisionTreeRegressor
 from pyspark.ml.regression import GBTRegressor
 from pyspark.ml.evaluation import RegressionEvaluator
+
 from pyspark.ml.tuning import ParamGridBuilder, TrainValidationSplit, CrossValidator
 from pyspark.ml.feature import VectorAssembler, StringIndexer, OneHotEncoder, Bucketizer
-
 
 
 
@@ -50,6 +50,7 @@ class Trainer:
         
 
         if(self.cfg.model == 'linear_regression'):
+
 
             for features in self.X:
                 self.R2LR , self.maeLR, self.rmseLR = self.linear_regression_train(features)
@@ -206,6 +207,7 @@ class Trainer:
 
     def decision_tree_regression_train(self, X):
         
+
         assembler = VectorAssembler(inputCols=X['variables'], 
                                     outputCol='features')
 
@@ -303,6 +305,7 @@ class Trainer:
                                                               metricName="rmse"),
                             numFolds = 3)
         
+
         model = rfcv.fit(self.train)
         predictions = model.transform(self.test)
 

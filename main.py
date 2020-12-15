@@ -27,8 +27,8 @@ def main(config):
 
     data_cleaned = Clean(config, data.df, data.spark, data.sc)
 
-    trainer = Trainer(config, data.spark, data.sc, data_cleaned)
 
+    trainer = Trainer(config, data.spark, data.sc, data_cleaned)
     if(str(config.view).lower() == 'true'):
         Views(config,data_cleaned.df,trainer.Visualize_Results).correlation_matrix()
         Views(config,data_cleaned.df,trainer.Visualize_Results).scatterPlot()
@@ -37,6 +37,7 @@ def main(config):
             Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_MAE()
             Views(config,data_cleaned.df,trainer.Visualize_Results).BarChart_RMSE()
 
+    data.sc.stop()
 
     data.sc.stop()
 
