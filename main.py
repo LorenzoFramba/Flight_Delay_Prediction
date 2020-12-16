@@ -29,7 +29,7 @@ def main(config):
         if(str(config.view).lower() == 'true'):
 
             Views(config,data_cleaned.df,trainer.Visualize_Results).correlation_matrix()
-            Views(config,data_cleaned.df,trainer.Visualize_Results).scatterPlot()
+            #Views(config,data_cleaned.df,trainer.Visualize_Results).scatterPlot()
 
             if(config.model == 'all'):
 
