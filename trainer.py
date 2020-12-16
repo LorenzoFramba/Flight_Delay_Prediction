@@ -258,8 +258,8 @@ class Trainer:
 
         #original
         TreeParamGrid = ParamGridBuilder()\
-            .addGrid(gbt.maxDepth, [2, 10])\
-            .addGrid(gbt.maxBins, [10, 20])\
+            .addGrid(gbt.maxDepth, [2, 5, 10, 20, 30])\
+            .addGrid(gbt.maxBins, [10, 20, 40, 80, 100])\
             .build()
 
         tvs = CrossValidator(estimator=pipeline,
