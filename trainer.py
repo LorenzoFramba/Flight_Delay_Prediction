@@ -220,9 +220,10 @@ class Trainer:
         pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, scaler,  dt1])
 
         dtparamGrid = (ParamGridBuilder()
-             .addGrid(dt1.maxDepth, [2, 5, 10, 20, 30])
+             .addGrid(dt1.maxDepth, [2, 5, 10])
              #.addGrid(dt.maxDepth, [2, 5, 10])
-             .addGrid(dt1.maxBins, [10, 20, 40, 80, 100])
+             .addGrid(dt1.maxBins, [5, 10, 30])
+             #.addGrid(dt1.numTrees, [5, 20, 50])
              #.addGrid(dt.maxBins, [10, 20])
              .build())
 
@@ -258,8 +259,8 @@ class Trainer:
 
         #original
         TreeParamGrid = ParamGridBuilder()\
-            .addGrid(gbt.maxDepth, [2, 5, 10, 20, 30])\
-            .addGrid(gbt.maxBins, [10, 20, 40, 80, 100])\
+            .addGrid(gbt.maxDepth, [2, 5, 10])\
+            .addGrid(gbt.maxBins, [5, 10, 30]) \
             .build()
 
         tvs = CrossValidator(estimator=pipeline,
@@ -294,7 +295,7 @@ class Trainer:
                     #.addGrid(rf.maxDepth, [2, 5, 10, 20, 30])
                     .addGrid(rf.maxDepth, [2, 5, 10])
                     #.addGrid(rf.maxBins, [10, 20, 40, 80, 100])
-                    .addGrid(rf.maxBins, [5, 10, 20])
+                    .addGrid(rf.maxBins, [5, 10, 30])
                     #.addGrid(rf.numTrees, [5, 20, 50, 100, 500])
                     .addGrid(rf.numTrees, [5, 20, 50])
                     .build())
