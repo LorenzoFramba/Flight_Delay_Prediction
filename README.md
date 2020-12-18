@@ -31,8 +31,8 @@ os.environ["SPARK_HOME"] = "/installation_folder/spark-2.4.7-bin-hadoop2.7"
 
 - **Clone this repo**:
 ```bash
-git clone https://github.com/LorenzoFramba/Airbus_Big_Data.git
-cd Airbus_Big_Data
+git clone https://github.com/LorenzoFramba/Flight_Delay_Prediction.git
+cd Flight_Delay_Prediction
 ```
 
 
