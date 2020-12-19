@@ -3,19 +3,19 @@ from cleanData import Clean
 from trainer import Trainer
 from visualization import Views
 
-from pyspark.sql.types import *
-from pyspark.sql.functions import isnan, when, count, col
-from pyspark.ml.feature import VectorAssembler
+
 import findspark
-import pandas as pd
 import argparse
-import random
 
 
 parser = argparse.ArgumentParser()     
 
 
 def main(config):
+    """
+    Captures the user input for the dataset and other customizations, process them and outputs the results
+
+    """
 
     findspark.init()
 
