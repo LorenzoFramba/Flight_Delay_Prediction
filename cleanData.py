@@ -111,6 +111,7 @@ class Clean:
 
         """
         X = []
+
         if self.cfg.variables == 'X1':
             X.append({"name": "X1", "variables": ['DepDelay', 'TaxiOut']})
         elif self.cfg.variables == 'all':

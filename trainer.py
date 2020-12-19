@@ -31,6 +31,7 @@ class Trainer:
         self.varIdxer = cleaned_data.varIdxer
         self.bucketizer = cleaned_data.bucketizer
 
+
         """ Splitting the dataset based on the user input """
         if self.cfg.dataset_size == 0:
             self.train, self.test = self.df.randomSplit(
@@ -89,6 +90,7 @@ class Trainer:
             Runs the Random Forest model and records the results
             """
             for features in self.X:
+
                 self.R2RF, self.maeRF, self.rmseRF = self.random_forest_train(features)
                 features['R2RF'] = self.R2RF
                 features['maeRF'] = self.maeRF
@@ -146,6 +148,7 @@ class Trainer:
             for x in results_all:
                 self.Visualize_Results.append(x)
                 print(x)
+
 
             print('\n Linear Regression R2 : {R2LR}\t'
                   '\n Random Forest R2 : {R2RF}\t'
@@ -273,6 +276,7 @@ class Trainer:
         Implements the Gradient-boosted Tree Regression model along with data preprocessing and transformation,
         using pipeline. Tunes the training model based on the cross-validation set based on RMSE.
 
+
         """
 
         assembler = VectorAssembler(inputCols=X['variables'],
@@ -284,6 +288,7 @@ class Trainer:
                            labelCol="ArrDelay",
                            maxIter=10)
         pipeline = Pipeline(stages=[self.bucketizer, self.varIdxer, self.oneHot, assembler, scaler, gbt])
+
 
         # original
         TreeParamGrid = ParamGridBuilder() \

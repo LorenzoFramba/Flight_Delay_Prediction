@@ -22,6 +22,7 @@ class Data:
         return spark, sc
 
     def checkFormatValidity(self):
+
         """
         Checks the entry format validity
 

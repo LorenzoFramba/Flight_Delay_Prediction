@@ -14,8 +14,6 @@ class Views:
         self.results_df=results_df
         self.correlation()
         self.toPandas()
-            
-
 
     def toPandas(self):
         self.df_Pandas_25 = self.df.sample(False, 0.1, 42).toPandas()

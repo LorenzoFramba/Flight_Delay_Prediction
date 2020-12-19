@@ -46,6 +46,7 @@ python main.py --dataset 'year.csv'
 ```
 
 
+
 - You also have the option to choose the train/test split (default is *75 / 25*), and the dataset sample size for training and testing with *--dataset_size*. 
 
 you also the ML model type  between *'linear_regression', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 

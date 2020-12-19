@@ -22,7 +22,6 @@ def main(config):
     data = Data(config)
 
     if data.proceed:
-
         data_cleaned = Clean(config, data.df, data.spark, data.sc)
         trainer = Trainer(config, data.spark, data.sc, data_cleaned)
 
