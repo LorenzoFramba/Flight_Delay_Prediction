@@ -14,16 +14,11 @@ class Views:
         self.results_df=results_df
         self.correlation()
         self.toPandas()
-        if(self.cfg.model=='all'):
-            self.BarChart_R2()
-            self.BarChart_MAE()
-            self.BarChart_RMSE()
             
 
 
     def toPandas(self):
-        #self.df_Pandas_25 = self.df.sample(False, 0.25, 42).toPandas()
-        self.df_Pandas_25 = self.df.sample(False, 0.001, 42).toPandas()
+        self.df_Pandas_25 = self.df.sample(False, 0.1, 42).toPandas()
         self.Results_DF = pd.DataFrame(self.results_df)
         
 

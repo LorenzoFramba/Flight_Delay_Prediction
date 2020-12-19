@@ -51,8 +51,6 @@ class Clean:
 
         df = df.na.drop("any")
 
-        # print( "Before: " +str(old_amount) + ",\nAfter: " + str(new_amount) + ",\n%:"+str(round(new_amount/old_amount, 2)*100))
-
         df = df.withColumn('OrigDest',
                            sf.concat(sf.col('Origin'), sf.lit('_'), sf.col('Dest')))
         df = df.drop(*["Origin", "Dest"])
