@@ -73,3 +73,10 @@ By default, the model will run with the easier variable: X1. You have the option
 ```bash
 python main.py --dataset 'year.csv' --model 'all' --split_size_train 75 --variables 'best' --view True 
 ```
+
+
+if you have any doubts, use 
+
+```bash
+python3 main.py --help
+```
