@@ -46,8 +46,6 @@ if __name__ == '__main__':
     parser.add_argument('--path', type=str, default='' )
     parser.add_argument('--split_size_train', type=int, default='75' , choices=range(1, 100),  help='percentage of observations in the training set')
     parser.add_argument('--dataset_size', type=int, default='0',  help='Amount of samples for training/testing')
-    #parser.add_argument('--regParam', type=float, default='0.3', help='specifies the regularization parameter in ALS, corresponds to λ' )
-    #parser.add_argument('--elasticNetParam', type=float, default='0.8' , help='elasticNetParam corresponds to α' ) 
     parser.add_argument("--view",  default=False, type=lambda x: (str(x).lower() == 'true'), help='True for showing the correlation matrix and scatterplots' ) 
 
     config = parser.parse_args()
