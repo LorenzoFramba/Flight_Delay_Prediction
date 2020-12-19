@@ -14,6 +14,12 @@ class Views:
         self.results_df=results_df
         self.correlation()
         self.toPandas()
+        if(self.cfg.model=='all'):
+            self.BarChart_R2()
+            self.BarChart_MAE()
+            self.BarChart_RMSE()
+            
+
 
     def toPandas(self):
         #self.df_Pandas_25 = self.df.sample(False, 0.25, 42).toPandas()
@@ -29,12 +35,13 @@ class Views:
     def correlation_matrix(self):
         fig, ax = plt.subplots(figsize=(11,9))         # Sample figsize in inches
         sns.heatmap(self.df_Pandas_25.corr(), annot = True, ax=ax,cbar_kws={"shrink": .5},  vmax = 1, vmin = -1, center = 0, cmap='coolwarm', linewidth =.5, linecolor ='black', square = True)
+        plt.show()
         #plt.show(block=False)
 
 
 
     def scatterPlot(self):
-        features = ['HotIndOrigDest','HotCRSCatDepTime']#, 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']
+        features = ['TaxiOut','DepDelay']#, 'TaxiOut', 'HotIndOrigDest', 'Speed', 'HotCRSCatDepTime', 'HotCRSCatArrTime', 'HotDepTime']
         for feature in features:
             sns.regplot(x=self.df_Pandas_25["ArrDelay"], y=self.df_Pandas_25[feature])
             plt.show()

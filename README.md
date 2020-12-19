@@ -31,8 +31,8 @@ os.environ["SPARK_HOME"] = "/installation_folder/spark-2.4.7-bin-hadoop2.7"
 
 - **Clone this repo**:
 ```bash
-git clone https://github.com/LorenzoFramba/Airbus_Big_Data.git
-cd Airbus_Big_Data
+git clone https://github.com/LorenzoFramba/Flight_Delay_Prediction.git
+cd Flight_Delay_Prediction
 ```
 
 
@@ -45,19 +45,15 @@ cd Airbus_Big_Data
 python main.py --dataset 'year.csv' 
 ```
 
-**Model Selection**
 
-You also have the option to choose the train/test split (default is *75 / 25*), and also the ML model type  between 
-*'linear_regression', 
-'generalized_linear_regression_train ', 
-'gradient_boosted_tree_regression',  
-'decision_tree_regression'* and 
-*'random_forest'* (default : *linear_regression*). 
+- You also have the option to choose the train/test split (default is *75 / 25*), and the dataset sample size for training and testing with *--dataset_size*. 
+
+you also the ML model type  between *'linear_regression', 'gradient_boosted_tree_regression',  'decision_tree_regression'* and *'random_forest'* (default : *linear_regression*). 
 
 The *all* option will train and test all the models, compare their respective R2 and select the best performing one.
 
 ```bash
-python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75
+python main.py --dataset 'year.csv' --model 'linear_regression' --split_size_train 75 --dataset_size 100000
 ```
 
 **Variable Selection**
