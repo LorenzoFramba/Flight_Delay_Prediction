@@ -1,4 +1,4 @@
-# Airbus_Big_Data
+# Flight_Delay_Prediction
 A Big Data Assignment regarding Spark, with Airbus data fetched and linear regression model  
 
 ## Getting Started
