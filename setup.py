@@ -4,7 +4,7 @@ with open("README.md") as f:
 	long_description = f.read()
 
 setup(
-	name='Prediction',
+	name='Delay Prediction',
 	version='1.0',
 	description='Prediction a flight delay with Spark',
 	license='MIT',
