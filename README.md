@@ -24,15 +24,21 @@ here are all the dependencies needed for the project
 import os
 os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
 os.environ["SPARK_HOME"] = "/installation_folder/spark-2.4.7-bin-hadoop2.7"
-
-!pip3 install pyspark
 ```
+
 
 
 - **Clone this repo**:
 ```bash
 git clone https://github.com/LorenzoFramba/Flight_Delay_Prediction.git
 cd Flight_Delay_Prediction
+```
+
+**Install dependencies**:
+Let's finish with running the setup.py function, to download any uninstalled library
+
+```bash
+python setup.py install
 ```
 
 
